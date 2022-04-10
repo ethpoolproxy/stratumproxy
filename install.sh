@@ -43,6 +43,7 @@ install() {
     sleep 2s
     journalctl --unit=stratumproxy --no-tail  --no-full --no-pager --no-hostname --lines=10
     echo "安装结束!"
+    echo "后台管理地址(请以实际外网IP为准): http://$(curl --silent ifconfig.me):8444"
 }
 
 uninstall() {

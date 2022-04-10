@@ -1,18 +1,17 @@
 # minerProxy
 ![webui.jpg](webui.jpg)
 ## 更新日志
-```
 
 ## Windows 直接下载运行 
 https://github.com/ethpoolproxy/stratumproxy/releases
-
----
 
 ## Liunx一键安装
 
 ```bash
 bash <(curl -s -L https://raw.githubusercontent.com/ethpoolproxy/stratumproxy/master/install.sh)
 ```
+
+---
 
 ### 查看运行情况
 ```bash

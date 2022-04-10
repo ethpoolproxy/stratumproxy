@@ -41,7 +41,7 @@ install() {
     systemctl daemon-reload
     systemctl enable --now stratumproxy
     sleep 2s
-    journalctl --unit=stratumproxy --no-tail --lines=10
+    journalctl --unit=stratumproxy --no-tail  --no-full --no-pager --no-hostname --lines=10
     echo "安装结束!"
 }
 
@@ -64,7 +64,7 @@ uninstall() {
 start() {
     systemctl enable --now stratumproxy
     sleep 2s
-    journalctl --unit=stratumproxy --no-tail --lines=10
+    journalctl --unit=stratumproxy --no-tail  --no-full --no-pager --no-hostname --lines=10
 
     echo "StratumProxy 已启动"
 }
@@ -72,7 +72,7 @@ start() {
 restart() {
     systemctl restart stratumproxy
     sleep 2s
-    journalctl --unit=stratumproxy --no-tail --lines=10
+    journalctl --unit=stratumproxy --no-tail  --no-full --no-pager --no-hostname --lines=10
 
     echo "StratumProxy 重新启动成功"
 }
@@ -84,7 +84,7 @@ stop() {
 
 show_log(){
     echo -n "最近的 100 行日志: "
-    journalctl --unit=stratumproxy --no-tail --lines=100
+    journalctl --unit=stratumproxy --no-tail  --no-full --no-pager --no-hostname --lines=100
 }
 
 check_limit(){

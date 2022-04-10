@@ -28,7 +28,7 @@ install() {
     case $choose in
     1)
         wget https://github.com/ethpoolproxy/stratumproxy/releases/download/v1.3.0/stratumproxy_v1.3.0 -O /usr/bin/stratumproxy
-        wget https://raw.githubusercontent.com/ethpoolproxy/stratumproxy/stratumproxy.service -O /etc/systemd/system/stratumproxy.service
+        wget https://raw.githubusercontent.com/ethpoolproxy/stratumproxy/master/stratumproxy.service -O /etc/systemd/system/stratumproxy.service
         ;;
     *)
         echo "请输入正确的数字"

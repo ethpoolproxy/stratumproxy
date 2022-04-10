@@ -3,30 +3,32 @@
 ## 更新日志
 ```
 
-## Windows 直接下载运行 <a href="https://github.com/ethpoolproxy/stratumproxy/releases">Release</a></br>
+## Windows 直接下载运行 
+https://github.com/ethpoolproxy/stratumproxy/releases
 
 ---
 
 ## Liunx一键安装
 
 ```bash
-bash <(curl -s -L https://github.com/ethpoolproxy/stratumproxy/blob/master/install.sh)
+bash <(curl -s -L https://raw.githubusercontent.com/ethpoolproxy/stratumproxy/master/install.sh)
 ```
 
 ### 查看运行情况
 ```bash
-screen -r minerProxy
+systemctl status stratumproxy
 ```
-### 退出查看运行情况 键盘键入
-```
-ctrl + a + d
-```
+或者使用脚本查看日志
 
 ---
 ## Linux手动安装
 ```bash
-mkdir miner_proxy
-cd miner_proxy
+wget https://github.com/ethpoolproxy/stratumproxy/releases/download/(填写版本)/stratumproxy_(填写版本) -O /usr/bin/stratumproxy
+wget https://raw.githubusercontent.com/ethpoolproxy/stratumproxy/stratumproxy.service -O /etc/systemd/system/stratumproxy.service
+systemctl daemon-reload
+systemctl enable --now stratumproxy
+```
+
 ## 重要说明
 
 ```bigquery

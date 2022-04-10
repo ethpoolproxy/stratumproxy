@@ -1,5 +1,5 @@
 # minerProxy
-![img_7.png](img/img_7.png)
+![webui.jpg](webui.jpg)
 ## 更新日志
 ```
 

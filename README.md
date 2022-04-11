@@ -1,5 +1,5 @@
 # StratumProxy
-
+<a href="https://t.me/StratumProxy">StratumProxy TG 交流群</a>
 ![webui.jpg](webui.jpg)  
 
 ## 更新日志
@@ -38,4 +38,3 @@ systemctl enable --now stratumproxy
 推荐使用腾讯云香港节点,flexpool和ethermine都可以到50ms左右,延迟率在0.5%-0.9%之间
 该软件系统占用极小,开最便宜的云服务器即可（不要使用轻量服务器,轻量网络极差）
 ```
-<a href="https://t.me/minerProxyGroup">tg 交流群</a></br>

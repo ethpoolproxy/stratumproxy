@@ -23,11 +23,11 @@ install() {
     mkdir /etc/stratumproxy
 
     echo "请选择版本"
-    echo "  1、v1.3.0 | 代号 [Rinako]"
+    echo "  1、v1.3.1 | 代号 [Rinako]"
     read -p "$(echo -e "请输入[1]：")" choose
     case $choose in
     1)
-        wget https://github.com/ethpoolproxy/stratumproxy/releases/download/v1.3.0/stratumproxy_v1.3.0 -O /usr/bin/stratumproxy
+        wget https://github.com/ethpoolproxy/stratumproxy/releases/download/v1.3.1/stratumproxy_v1.3.1 -O /usr/bin/stratumproxy
         wget https://raw.githubusercontent.com/ethpoolproxy/stratumproxy/master/stratumproxy.service -O /etc/systemd/system/stratumproxy.service
         ;;
     *)

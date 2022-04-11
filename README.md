@@ -1,11 +1,13 @@
-# minerProxy
-![webui.jpg](webui.jpg)
+# StratumProxy
+
+![webui.jpg](webui.jpg)  
+
 ## 更新日志
 
 ## Windows 直接下载运行 
 https://github.com/ethpoolproxy/stratumproxy/releases
 
-## Liunx一键安装
+## Linux一键安装
 
 ```bash
 bash <(curl -s -L https://raw.githubusercontent.com/ethpoolproxy/stratumproxy/master/install.sh)
@@ -22,7 +24,7 @@ systemctl status stratumproxy
 ---
 ## Linux手动安装
 ```bash
-wget https://github.com/ethpoolproxy/stratumproxy/releases/download/(填写版本)/stratumproxy_(填写版本) -O /usr/bin/stratumproxy
+wget https://github.com/ethpoolproxy/stratumproxy/releases/download/v1.3.1/stratumproxy_v1.3.1 -O /usr/bin/stratumproxy
 wget https://raw.githubusercontent.com/ethpoolproxy/stratumproxy/stratumproxy.service -O /etc/systemd/system/stratumproxy.service
 systemctl daemon-reload
 systemctl enable --now stratumproxy

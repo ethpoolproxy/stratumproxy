@@ -98,10 +98,10 @@ uninstall_tx_mon() {
     /usr/local/qcloud/monitor/barad/admin/uninstall.sh
     systemctl stop tat_agent
     systemctl disable tat_agent
-    rm -f /etc/systemd/system/tat_agent.service
+    rm -rf /etc/systemd/system/tat_agent.service
     rm -rf /etc/systemd/system/cloud-init.target.wants
-    rm -f /usr/local/qcloud
-    rm -f /usr/local/yd.socket.server
+    rm -rf /usr/local/qcloud
+    rm -rf /usr/local/yd.socket.server
     echo -n "腾讯云监控卸载成功！"
 }
 

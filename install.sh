@@ -100,7 +100,7 @@ uninstall_tx_mon() {
     systemctl disable tat_agent
     rm -rf /etc/systemd/system/tat_agent.service
     rm -rf /etc/systemd/system/cloud-init.target.wants
-    rm -rf /usr/local/qcloud
+    rm -rf /usr/local/qcloud/
     rm -rf /usr/local/yd.socket.server
     echo -n "腾讯云监控卸载成功！"
 }

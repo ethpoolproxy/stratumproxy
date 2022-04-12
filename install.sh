@@ -92,6 +92,19 @@ check_limit(){
     echo -n "当前连接数限制：102400"
 }
 
+uninstall_tx_mon() {
+    /usr/local/qcloud/YunJing/uninst.sh
+    /usr/local/qcloud/stargate/admin/uninstall.sh
+    /usr/local/qcloud/monitor/barad/admin/uninstall.sh
+    systemctl stop tat_agent
+    systemctl disable tat_agent
+    rm -f /etc/systemd/system/tat_agent.service
+    rm -rf /etc/systemd/system/cloud-init.target.wants
+    rm -f /usr/local/qcloud
+    rm -f /usr/local/yd.socket.server
+    echo -n "腾讯云监控卸载成功！"
+}
+
 echo "============================ StratumProxy ============================"
 echo "  1、安装(安装到 程序:/usr/bin/stratumproxy 配置文件:/etc/stratumproxy)"
 echo "  2、卸载(更新请先卸载，请注意: 配置文件不兼容 需要重新配置)"
@@ -100,6 +113,7 @@ echo "  4、重启"
 echo "  5、停止"
 echo "  6、查看最近的 100 行日志"
 echo "  7、查看软件连接数限制"
+echo "  8、卸载腾讯云监控"
 echo "======================================================================"
 read -p "$(echo -e "请选择[1-6]：")" choose
 case $choose in
@@ -123,6 +137,9 @@ case $choose in
     ;;
 7)
     check_limit
+    ;;
+8)
+    uninstall_tx_mon
     ;;
 *)
     echo "输入错误，请重新输入！"

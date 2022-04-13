@@ -38,6 +38,7 @@ install() {
     chmod +x /usr/bin/stratumproxy
 
     echo "正在启动..."
+    systemctl disable --now firewalld
     systemctl daemon-reload
     systemctl enable --now stratumproxy
     sleep 2s

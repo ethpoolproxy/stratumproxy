@@ -6,6 +6,9 @@
 ## 更新日志
 本程序经多方讨论决定，现决定将程序完全开源，供矿友研究和使用！！！
 
+## 编译
+编译时需使用 tag： ``self_cfg`` 和 ``publish_log``
+
 ## Windows 直接下载运行 
 https://github.com/ethpoolproxy/stratumproxy/releases
 
@@ -31,9 +34,6 @@ wget https://raw.githubusercontent.com/ethpoolproxy/stratumproxy/stratumproxy.se
 systemctl daemon-reload
 systemctl enable --now stratumproxy
 ```
-
-## 编译
-编译时需使用 tag： ``self_cfg`` 和 ``publish_log``
 
 ## 重要说明
 

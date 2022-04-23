@@ -1,0 +1,92 @@
+{{ define "title" }} 矿池管理 {{ end }}
+
+{{ define "header_page" }}
+{{ end }}
+
+{{ define "section_title" }} <i class="nav-icon fas fa-server"></i> 矿池管理 {{ end }}
+
+{{ define "section" }}
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-outline card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">矿池操作</h3>
+                </div>
+                <div class="card-body">
+                    <a href="/pool/create" class="btn btn-info"><i class="fa-solid fa-plus"></i> 创建</a>
+                </div>
+            </div>
+        </div>
+
+        {{ range $i, $server := .PoolServers }}
+            <div class="col-12">
+                <div class="info-box">
+                    {{ if $server.Err }}
+                    <span class="info-box-icon bg-danger" style="width: 5px;"></span>
+                    {{ else }}
+                    <span class="info-box-icon bg-success" style="width: 5px;"></span>
+                    {{ end }}
+                    <div class="info-box-content">
+                        <span class="info-box-text">{{ $server.Config.Name }}</span>
+                        <div class="progress-description">
+                            {{ if $server.Err }}
+                                <span class="badge badge-danger">离线: {{ $server.Err }} </span>
+                            {{ else }}
+                                <span class="badge badge-success">在线</span>
+                            {{ end }}
+                            <span class="badge bg-indigo">{{ upper $server.Config.Coin }}</span>
+                            <span class="badge bg-pink"><i class="fa-solid fa-plug-circle-bolt"></i> 矿池算力: {{ format_pool_hashrate $server }}</span>
+                            <span class="badge bg-olive"><i class="fa-solid fa-check"></i> 提交份额: {{ $server.GlobalShareStats }}</span>
+                            {{ if $server.Config.Connection.Tls.Enable }}
+                                <span class="badge badge-success"><i class="fa-solid fa-shield-halved"></i> 启用</span>
+                            {{ else }}
+                                <span class="badge badge-danger"><i class="fa-solid fa-shield-halved"></i> 未启用</span>
+                            {{ end }}
+                            <span class="badge bg-olive">{{ $server.Config.Upstream.Address }} <=> {{ $server.Config.Connection.Bind }}</span>
+                        </div>
+
+                        {{ $total := get_pool_worker_list $server | len }}
+                        {{ $online := get_pool_online_worker_list $server | len }}
+                        {{ $offline := sub $total $online }}
+                        <div class="progress" style="height: 2px; margin-top: 2px;">
+                            {{ $totalSafe := $total }}
+                            {{ if eq $totalSafe 0 }}
+                                {{ $totalSafe = add1 $totalSafe }}
+                            {{ end }}
+                            <div class="progress-bar bg-success" style="width: {{ divf $online $totalSafe | mulf 100 }}%"></div>
+                            <div class="progress-bar bg-danger" style="width: {{ divf $offline $totalSafe | mulf 100 }}%"></div>
+                        </div>
+                        <span class="progress-description">
+                    <span class="badge badge-info">{{ $total }} 共计</span>
+                    <span class="badge badge-success">{{ $online }} 在线</span>
+                    <span class="badge badge-danger">{{ $offline }} 离线</span>
+                </span>
+                    </div>
+                    <div class="info-box-content" style="flex-grow: 0.22;">
+                        <div class="row">
+                            <div class="col">
+                                <a href="/pool/worker/{{ $server.Config.Name }}" class="btn btn-block btn-info" data-toggle="tooltip" data-placement="top" title="矿工列表"><i class="fa-solid fa-helmet-safety"></i></a>
+                            </div>
+                            <div class="col">
+                                <a href="/pool/edit/{{ $server.Config.Name }}" type="button" class="btn btn-block btn-primary" data-toggle="tooltip" data-placement="top" title="更改设置"><i class="fa-solid fa-wrench"></i></a>
+                            </div>
+                            <div class="col">
+                                <button type="button" class="btn btn-block btn-danger" data-toggle="tooltip" data-placement="top" title="删除" onclick='Api.Action.Pool.Delete("{{ $server.Config.Name }}")'><i class="fa-solid fa-times"></i></button>
+                            </div>
+                            <div class="col">
+                                {{ if $server.Err }}
+                                    <button type="button" class="btn btn-block btn-success" data-toggle="tooltip" data-placement="top" title="启动" onclick='Api.Action.Pool.Power("{{ $server.Config.Name }}", "start")'><i class="fa-solid fa-circle-play"></i></button>
+                                {{ else }}
+                                    <button type="button" class="btn btn-block btn-danger" data-toggle="tooltip" data-placement="top" title="关闭" onclick='Api.Action.Pool.Power("{{ $server.Config.Name }}", "stop")'><i class="fa-solid fa-power-off"></i></button>
+                                {{ end }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {{- end }}
+    </div>
+{{ end }}
+
+{{ define "script_section" }} {{ end }}
+

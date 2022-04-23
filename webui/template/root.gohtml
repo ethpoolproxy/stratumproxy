@@ -1,0 +1,105 @@
+{{ define "root" }}
+    <!DOCTYPE html>
+    <html lang="en">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+
+            <link rel="stylesheet" href="/assets/css/font.css">
+            <link rel="stylesheet" href="/assets/plugins/fontawesome-free/css/all.min.css">
+            <link rel="stylesheet" href="/assets/css/adminlte.min.css">
+            <link rel="stylesheet" href="/assets/plugins/sweetalert2/sweetalert2.min.css">
+            <link rel="stylesheet" href="/assets/plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css">
+
+            {{ template "header" . }}
+            {{ template "header_page" . }}
+        </head>
+        <body class="hold-transition sidebar-mini layout-fixed dark-mode">
+            <div class="wrapper">
+                <nav class="main-header navbar navbar-expand navbar-dark">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+                        </li>
+                    </ul>
+
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" data-widget="fullscreen" href="#" role="button">
+                                <i class="fas fa-expand-arrows-alt"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <aside class="main-sidebar sidebar-dark-primary elevation-4">
+                    <div class="sidebar">
+                        <div class="form-inline" style="margin-top: 12px">
+                            <div class="input-group" data-widget="sidebar-search">
+                                <input class="form-control form-control-sidebar" type="search" placeholder="Search" aria-label="Search">
+                                <div class="input-group-append">
+                                    <button class="btn btn-sidebar">
+                                        <i class="fas fa-search fa-fw"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <nav class="mt-2">
+                            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                                <li class="nav-item">
+                                    <a href="/dashboard" class="nav-link">
+                                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                                        <p>仪表盘</p>
+                                    </a>
+                                </li>
+                            </ul>
+                            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                                <li class="nav-item">
+                                    <a href="/pool" class="nav-link">
+                                        <i class="nav-icon fas fa-server"></i>
+                                        <p>矿池管理</p>
+                                    </a>
+                                </li>
+                            </ul>
+                            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                                <li class="nav-item">
+                                    <a href="/cfg/edit" class="nav-link">
+                                        <i class="nav-icon fas fa-cog"></i>
+                                        <p>配置修改</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </aside>
+
+                <!-- Content Wrapper. Contains page content -->
+                {{ template "body" . }}
+
+                <footer class="main-footer">
+                    <strong>Copyright &copy; 2021-2022 <a href="https://github.com/ethpoolproxy/stratumproxy">StratumProxy</a>.</strong>
+                    All rights reserved.
+                </footer>
+            </div>
+
+            <script src="/assets/plugins/jquery/jquery.min.js"></script>
+            <script src="/assets/plugins/jquery-ui/jquery-ui.min.js"></script>
+            <script>
+                $.widget.bridge('uibutton', $.ui.button)
+                $('a[href="' + document.location.pathname + '"]').addClass("active")
+
+                $(function () {
+                    $('[data-toggle="tooltip"]').tooltip()
+                })
+            </script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+            <script src="/assets/js/adminlte.min.js"></script>
+            <script src="/assets/plugins/sweetalert2/sweetalert2.all.min.js"></script>
+            <script src="/assets/js/api.js"></script>
+            <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+            <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+            {{ template "script_section" . }}
+        </body>
+    </html>
+{{ end }}

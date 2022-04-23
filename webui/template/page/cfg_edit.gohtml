@@ -1,0 +1,62 @@
+{{ define "title" }} 配置修改 {{ end }}
+
+{{ define "header_page" }}
+{{ end }}
+
+{{ define "section_title" }} <i class="nav-icon fas fa-gear"></i> 配置修改 {{ end }}
+
+{{ define "section" }}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-primary">
+                    <form id="admin-user">
+                        <div class="card-header">
+                            <h3 class="card-title">后台用户</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group row">
+                                    <div class="col-md-6">
+                                        <label for="username">用户名</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                            </div>
+                                            <input type="text" value="{{ .WebUI.Auth.Username }}" id="username" class="form-control" placeholder="用户名">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="passwd">密码</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text"><i class="fas fa-asterisk"></i></span>
+                                            </div>
+                                            <input type="password" id="passwd" class="form-control" placeholder="没有硬性要求 | 越复杂越好">
+                                        </div>
+                                    </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button id="admin-user-submit" type="button" class="btn btn-block btn-primary"><i class="fas fa-check"></i> 修改</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{{ end }}
+
+{{ define "script_section" }}
+    <script>
+        $(function() {
+            $("#admin-user-submit").on("click", function () {
+                let form = {
+                    username: $("#username").val(),
+                    passwd: $("#passwd").val(),
+                }
+
+                Api.Action.Cfg.AuthEdit(form)
+            })
+        })
+    </script>
+{{ end }}

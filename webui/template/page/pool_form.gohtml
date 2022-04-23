@@ -1,0 +1,319 @@
+{{ define "title" }} {{ end }}
+
+{{ define "header_page" }}
+{{ end }}
+
+{{ define "section_title" }} <i class="nav-icon fas {{ .Icon }}"></i> {{ .Title }} {{ end }}
+
+{{ define "section" }}
+    <div class="container-fluid">
+        <form id="pool-form">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">矿池信息</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="Coin">币种 | </label>
+                                <label for="Name">矿池名</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fa-brands fa-bitcoin"></i></span>
+                                    </div>
+                                    <select class="selector" id="Coin">
+                                        <option value="eth"> ETH/ETC </option>
+                                    </select>
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-tag"></i></span>
+                                    </div>
+                                    {{ if eq .PoolCfg.Name "" }}
+                                    <input type="text" id="Name" class="form-control" placeholder="请不要使用特殊字符(标点符号) 支持中文">
+                                    {{ else }}
+                                    <input type="text" style="background-color: gray" value="{{ .PoolCfg.Name }}" id="Name" class="form-control" placeholder="请不要使用特殊字符(标点符号) 支持中文" disabled>
+                                    {{ end }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card card-cyan">
+                        <div class="card-header">
+                            <h3 class="card-title">连接设置</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="bindIP">绑定 IP : </label>
+                                <label for="bindPort">开放端口</label>
+                                <label for="SSL"></label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-shield-halved"></i></span>
+                                    </div>
+                                    <select class="selector" id="SSL">
+                                        <option value="true">SSL/TLS</option>
+                                        <option value="false">TCP</option>
+                                    </select>
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-laptop"></i></span>
+                                    </div>
+                                    <input type="text" id="bindIP" value="0.0.0.0" class="form-control" placeholder="绑定的网卡IP | 全部/默认请填 0.0.0.0">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">:</span>
+                                    </div>
+                                    <input type="number" id="bindPort" class="form-control" placeholder="监听端口 | 默认请填 8443">
+                                </div>
+                            </div>
+                            <hr/>
+                            <div class="form-group">
+                                <label for="certFile">证书文件 | </label>
+                                <label for="keyFile">密钥文件</label>
+                                <p>
+                                    <span class="badge bg-pink">如任意上述文件不存在则使用软件内置证书</span>
+                                    <span class="badge bg-info">未启用 SSL 可忽略此设置</span>
+                                </p>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-certificate"></i></span>
+                                    </div>
+                                    <input type="text" value="cert.crt" id="certFile" class="form-control" placeholder="cert.pem">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-key"></i></span>
+                                    </div>
+                                    <input type="text" value="key.pem" id="keyFile" class="form-control" placeholder="key.pem">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card card-green">
+                        <div class="card-header">
+                            <h3 class="card-title">上游设置</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="upstreamIP">上游 IP : </label>
+                                <label for="upstreamPort">上游端口</label>
+                                <label for="upstreamSSL"></label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-shield-halved"></i></span>
+                                    </div>
+                                    <select class="selector" id="upstreamSSL">
+                                        <option value="false">TCP</option>
+                                        <option value="true">SSL/TLS</option>
+                                    </select>
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-laptop"></i></span>
+                                    </div>
+                                    <input type="text" id="upstreamIP" class="form-control" placeholder="域名/IP | 示例: asia1.ethermine.org">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">:</span>
+                                    </div>
+                                    <input type="number" id="upstreamPort" class="form-control" placeholder="上游端口 | 示例: 4444">
+                                </div>
+                            </div>
+                            <hr/>
+                            <div class="form-group">
+                                <label for="proxyIP">代理 IP : </label>
+                                <label for="proxyPort">代理端口</label>
+                                <label for="proxyProtocol"></label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-tag"></i></span>
+                                    </div>
+                                    <select class="form-control" id="proxyProtocol">
+                                        <option>socks5://</option>
+                                    </select>
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-laptop"></i></span>
+                                    </div>
+                                    <input type="text" class="form-control" id="proxyIP" placeholder="域名/IP | 留空不启用 | 示例: 127.0.0.1">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">:</span>
+                                    </div>
+                                    <input type="number" id="proxyPort" class="form-control" placeholder="上游端口 | 留空不启用 | 示例: 8080">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card card-pink">
+                        <div class="card-header">
+                            <h3 class="card-title">抽水设置</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group row">
+                                <div class="col-md-7">
+                                    <label for="feeWallet">钱包地址</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                                <span class="input-group-text"><i class="fas fa-wallet"></i></span>
+                                            </div>
+                                            <input type="text" value="{{ .PoolCfg.FeeConfig.Wallet }}" id="feeWallet" class="form-control" placeholder="钱包地址">
+                                        </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="feePct">比例</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                                <span class="input-group-text"><i class="fas fa-percentage"></i></span>
+                                        </div>
+                                        <input type="number" value="{{ .PoolCfg.FeeConfig.Pct }}" id="feePct" class="form-control" placeholder="0-50 | 为 0 则不启用抽水">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="feeNamePrefix">矿工名前缀</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-tag"></i></span>
+                                        </div>
+                                        <input type="text" value="{{ .PoolCfg.FeeConfig.NamePrefix }}" id="feeNamePrefix" class="form-control" placeholder="举例: 矿工名为 default | 前缀为 fee 在抽水矿池显示: fee.default">
+                                    </div>
+                                </div>
+                            </div>
+                            <hr/>
+                            <div class="form-group">
+                                <label for="feeUpstreamIP">上游 IP : </label>
+                                <label for="feeUpstreamPort">上游端口</label>
+                                <label for="feeUpstreamSSL"></label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-shield-halved"></i></span>
+                                    </div>
+                                    <select class="selector" id="feeUpstreamSSL">
+                                        <option value="false">TCP</option>
+                                        <option value="true">SSL/TLS</option>
+                                    </select>
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-laptop"></i></span>
+                                    </div>
+                                    <input type="text" id="feeUpstreamIP" class="form-control" placeholder="域名/IP | 示例: asia1.ethermine.org">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">:</span>
+                                    </div>
+                                    <input type="number" id="feeUpstreamPort" class="form-control" placeholder="上游端口 | 示例: 4444">
+                                </div>
+                            </div>
+                            <hr/>
+                            <div class="form-group">
+                                <label for="feeProxyIP">代理 IP : </label>
+                                <label for="feeProxyPort">代理端口</label>
+                                <label for="proxyProtocol"></label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-tag"></i></span>
+                                    </div>
+                                    <select class="form-control" id="proxyProtocol">
+                                        <option>socks5://</option>
+                                    </select>
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-laptop"></i></span>
+                                    </div>
+                                    <input type="text" class="form-control" id="feeProxyIP" placeholder="域名/IP | 留空不启用 | 示例: 127.0.0.1">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">:</span>
+                                    </div>
+                                    <input type="number" id="feeProxyPort" class="form-control" placeholder="上游端口 | 留空不启用 | 示例: 8080">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card card-green">
+                        <div class="card-header">
+                            <h3 class="card-title">操作</h3>
+                        </div>
+                        <div class="card-body">
+                            <button type="button" id="submit" class="btn btn-primary">
+                                {{ if eq .Action "create" }}
+                                    <i class="fa-solid fa-paper-plane"></i> 创建
+                                {{ else }}
+                                    <i class="fa-solid fa-pencil"></i> 修改
+                                {{ end }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+{{ end }}
+
+{{ define "script_section" }}
+    <script>
+        $(function() {
+            if ("{{ .Action }}" === "create") {
+                document.title = document.title + "添加矿池"
+            } else {
+                document.title = document.title + "编辑矿池"
+
+                $("#Coin").val("{{ .PoolCfg.Coin }}").change()
+
+                $("#SSL").val("{{ .PoolCfg.Connection.Tls.Enable }}").change()
+                $("#bindIP").val("{{ .PoolCfg.Connection.Bind }}".split(":")[0])
+                $("#bindPort").val("{{ .PoolCfg.Connection.Bind }}".split(":")[1])
+                $("#certFile").val("{{ .PoolCfg.Connection.Tls.Cert }}")
+                $("#keyFile").val("{{ .PoolCfg.Connection.Tls.Key }}")
+
+                $("#upstreamSSL").val("{{ .PoolCfg.Upstream.Tls }}").change()
+                $("#upstreamIP").val("{{ .PoolCfg.Upstream.Address }}".split(":")[0])
+                $("#upstreamPort").val("{{ .PoolCfg.Upstream.Address }}".split(":")[1])
+                if ("{{ .PoolCfg.Upstream.Proxy }}" !== "") {
+                    $("#proxyIP").val("{{ .PoolCfg.Upstream.Proxy }}".split(":")[0])
+                    $("#proxyPort").val("{{ .PoolCfg.Upstream.Proxy }}".split(":")[1])
+                }
+
+                $("#feeUpstreamSSL").val("{{ .PoolCfg.FeeConfig.Upstream.Tls }}").change()
+                $("#feeUpstreamIP").val("{{ .PoolCfg.FeeConfig.Upstream.Address }}".split(":")[0])
+                $("#feeUpstreamPort").val("{{ .PoolCfg.FeeConfig.Upstream.Address }}".split(":")[1])
+                if ("{{ .PoolCfg.FeeConfig.Upstream.Proxy }}" !== "") {
+                    $("#feeProxyIP").val("{{ .PoolCfg.FeeConfig.Upstream.Proxy }}".split(":")[0])
+                    $("#feeProxyPort").val("{{ .PoolCfg.FeeConfig.Upstream.Proxy }}".split(":")[1])
+                }
+            }
+
+            $("#submit").on("click", function () {
+                // collect form
+                let form = {
+                    name: $("#Name").val(),
+                    coin: $("#Coin").val(),
+                    upstream: {
+                        tls: $("#upstreamSSL").val() === "true",
+                        proxy: $("#proxyIP").val() + ":" + $("#proxyPort").val(),
+                        address: $("#upstreamIP").val() + ":" + $("#upstreamPort").val()
+                    },
+                    fee: {
+                        pct: parseFloat($("#feePct").val()),
+                        wallet: $("#feeWallet").val(),
+                        namePrefix: $("#feeNamePrefix").val(),
+                        upstream: {
+                            tls: $("#feeUpstreamSSL").val() === "true",
+                            proxy: $("#feeProxyIP").val() + ":" + $("#feeProxyPort").val(),
+                            address: $("#feeUpstreamIP").val() + ":" + $("#feeUpstreamPort").val()
+                        }
+                    },
+                    connection: {
+                        bind: $("#bindIP").val() + ":" + $("#bindPort").val(),
+                        tls: {
+                            enable: $("#SSL").val() === "true",
+                            cert: $("#certFile").val(),
+                            key: $("#keyFile").val(),
+                        }
+                    }
+                }
+
+                if ("{{ .Action }}" === "create") {
+                    Api.Action.Pool.CreatePool(form)
+                } else {
+                    Api.Action.Pool.EditPool(form)
+                }
+            })
+        });
+    </script>
+{{ end }}

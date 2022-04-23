@@ -1,0 +1,243 @@
+{{ define "title" }} 仪表盘 {{ end }}
+
+{{ define "header_page" }}
+    <style>
+        table tr td {
+            border: none !important;
+        }
+    </style>
+{{ end }}
+
+{{ define "section_title" }} <i class="nav-icon fas fa-tachometer-alt"></i> 仪表盘 {{ end }}
+
+{{ define "section" }}
+    <div class="container-fluid">
+        <div class="row row-cols-sm-1 row-cols-md-4">
+            <div class="col-md-3">
+                <div class="info-box">
+                    <span class="info-box-icon bg-success"><i class="fa-solid fa-clock"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">运行时间</span>
+                        <span class="info-box-number" id="time-from-start"></span>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" style="width: 100%"></div>
+                        </div>
+                        <div class="progress-description">
+                            <span class="badge badge-success">启动自: {{ .StartTimeStr }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="info-box">
+                    <span class="info-box-icon bg-pink"><i class="fa-solid fa-bookmark"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">软件版本</span>
+                        <span class="info-box-number">{{ .Version }}</span>
+                        <div class="progress">
+                            <div class="progress-bar bg-pink" style="width: 100%"></div>
+                        </div>
+                        <div class="progress-description">
+                            <span class="badge bg-pink">构建时间: {{ .BuildTime }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="info-box">
+                    <span class="info-box-icon bg-purple"><i class="fa-solid fa-server"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">已配置矿池</span>
+                        <span class="info-box-number">{{ .PoolServersCount }}</span>
+                        {{ $offline := sub .PoolServersCount (len .OnlinePoolServers) }}
+                        <div class="progress">
+                            {{ $totalSafe := .PoolServersCount }}
+                            {{ if eq $totalSafe 0 }}
+                                {{ $totalSafe = add1 $totalSafe }}
+                            {{ end }}
+                            <div class="progress-bar bg-purple" style="width: {{ divf (len .OnlinePoolServers) $totalSafe | mulf 100 }}%"></div>
+                            <div class="progress-bar bg-danger" style="width: {{ divf $offline $totalSafe | mulf 100 }}%"></div>
+                        </div>
+                        <div class="progress-description">
+                            <span class="badge badge-success">{{ len .OnlinePoolServers }} 在线</span>
+                            <span class="badge badge-danger">{{ $offline }} 离线</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="info-box">
+                    <span class="info-box-icon bg-info"><i class="fa-solid fa-helmet-safety"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">已注册矿工</span>
+                        <span class="info-box-number">
+                            {{ $offline = sub .MinerCount .OnlineMinerCount }}
+                            {{ .MinerCount }}
+                            <div class="progress">
+                                {{ $totalSafe = .MinerCount }}
+                                {{ if eq $totalSafe 0 }}
+                                    {{ $totalSafe = add1 $totalSafe }}
+                                {{ end }}
+                                <div class="progress-bar bg-success" style="width: {{ divf .OnlineMinerCount $totalSafe | mulf 100 }}%"></div>
+                                <div class="progress-bar bg-danger" style="width: {{ divf $offline $totalSafe | mulf 100 }}%"></div>
+                            </div>
+                            <div class="progress-description">
+                                <span class="badge badge-success">{{ .OnlineMinerCount }} 在线</span>
+                                <span class="badge badge-danger">{{ $offline }} 离线</span>
+                            </div>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row row-cols-sm-1 row-cols-md-2">
+            {{ if eq (len .OnlinePoolServers) 0 }}
+                <div class="col-md-3">
+                    <div class="info-box">
+                        <span class="info-box-icon bg-info"><i class="fas fa-exclamation-circle"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">还未配置矿池</span>
+                            <span class="info-box-number">
+                                <a href="/pool/create" class="btn btn-info"><i class="fa-solid fa-plus"></i> 点我创建</a>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            {{ end }}
+
+            {{ range $i, $server := .OnlinePoolServers }}
+            <div class="col-md-6">
+                {{ if $server.Err }}
+                <div class="card card-danger">
+                    {{ else }}
+                    <div class="card card-info">
+                        {{ end }}
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fa-solid fa-server"></i> {{ $server.Config.Name }}</h3>
+                        </div>
+                        <div class="card-body">
+                            <table class="table">
+                                <tbody>
+                                <tr>
+                                    <td><i class="fa-solid fa-heart-pulse"></i> 状态</td>
+                                    <td>
+                                        {{ if $server.Err }}
+                                            <span class="badge badge-danger">离线: {{ $server.Err }} </span>
+                                        {{ else }}
+                                            <span class="badge badge-success">在线</span>
+                                        {{ end }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fa-brands fa-bitcoin"></i> 币种</td>
+                                    <td>{{ upper $server.Config.Coin }}</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fa-solid fa-plug-circle-bolt"></i> 本地算力</td>
+                                    <td>{{ format_pool_hashrate $server }}</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fa-solid fa-helmet-safety"></i> 矿工数</td>
+                                    <td>
+                                        {{ $total := get_pool_worker_list $server | len }}
+                                        {{ $online := get_pool_online_worker_list $server | len }}
+                                        {{ $offline := sub $total $online }}
+                                        <span class="badge badge-info">{{ $total }} 共计</span>
+                                        <span class="badge badge-success">{{ $online }} 在线</span>
+                                        <span class="badge badge-danger">{{ $offline }} 离线</span>
+                                        <div class="progress" style="height: 2px; margin-top: 2px;">
+                                            {{ $totalSafe := $total }}
+                                            {{ if eq $totalSafe 0 }}
+                                                {{ $totalSafe = add1 $totalSafe }}
+                                            {{ end }}
+                                            <div class="progress-bar bg-success" style="width: {{ divf $online $totalSafe | mulf 100 }}%"></div>
+                                            <div class="progress-bar bg-danger" style="width: {{ divf $offline $totalSafe | mulf 100 }}%"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fa-solid fa-check"></i> 提交份额</td>
+                                    <td>{{ $server.GlobalShareStats }}</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fa-solid fa-water"></i> 明抽份额</td>
+                                    {{ if f_greater $server.Config.FeeConfig.Pct 0.0 }}
+                                        {{ if eq (len $server.FeeInstance) 0 }}
+                                            <td>0% / 0</td>
+                                        {{ else }}
+                                            {{ $safeDiv := $server.GlobalShareStats }}
+                                            {{ if eq $safeDiv 0 }}
+                                                {{ $safeDiv = add1 $safeDiv }}
+                                            {{ end }}
+                                            <td>{{ round (divf (index $server.FeeInstance 0).Share $safeDiv | mulf 100) 3 }}% / {{ (index $server.FeeInstance 0).Share }}</td>
+                                        {{ end }}
+                                    {{ else }}
+                                        <td>0% / 0</td>
+                                    {{ end }}
+                                </tr>
+                                <tr>
+                                    <td><i class="fa-solid fa-shield-halved"></i> SSL/TLS</td>
+                                    <td>
+                                        {{ if $server.Config.Connection.Tls.Enable }}
+                                            <span class="badge badge-success">启用</span>
+                                        {{ else }}
+                                            <span class="badge badge-danger">未启用</span>
+                                        {{ end }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fa-solid fa-upload"></i> 转发矿池</td>
+                                    <td>{{ $server.Config.Upstream.Address }}</td>
+                                </tr>
+                                <tr>
+                                    <td><ion-icon name="link-outline"></ion-icon> 监听地址</td>
+                                    <td>
+                                        <span class="badge badge-info">请以实际公网IP为准</span>
+                                        {{ if $server.Config.Connection.Tls.Enable }}
+                                            stratum+ssl://{{ $server.Config.Connection.Bind }}
+                                        {{ else }}
+                                            stratum+tcp://{{ $server.Config.Connection.Bind }}
+                                        {{ end }}
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="card-footer">
+                            <div class="row row-cols-sm-2 row-cols-md-6">
+                                <div class="col-sm-6">
+                                    <a href="/pool/worker/{{ $server.Config.Name }}" class="btn btn-block btn-info"><i class="fa-solid fa-helmet-safety"></i> 矿机列表</a>
+                                </div>
+                                <div class="col-sm-6">
+                                    <a href="/pool/edit/{{ $server.Config.Name }}" type="button" class="btn btn-block btn-primary"><i class="fa-solid fa-wrench"></i> 管理</a>
+                                </div>
+                                <div class="col-sm-6">
+                                    {{ if $server.Err }}
+                                        <button type="button" class="btn btn-block btn-success" onclick='Api.Action.Pool.Power("{{ $server.Config.Name }}", "start")'><i class="fa-solid fa-circle-play"></i> 启动</button>
+                                    {{ else }}
+                                        <button type="button" class="btn btn-block btn-danger" onclick='Api.Action.Pool.Power("{{ $server.Config.Name }}", "stop")'><i class="fa-solid fa-power-off"></i> 停止</button>
+                                    {{ end }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{- end }}
+        </div>
+    </div>
+{{ end }}
+
+{{ define "script_section" }}
+    <script src="/assets/js/luxon.min.js"></script>
+    <script>
+        let Duration = luxon.Duration;
+        let DateTime = luxon.DateTime;
+        let start = DateTime.fromSeconds(Number({{.StartTime}}));
+        let current = DateTime.now();
+        let diffTime = current.diff(start);
+        let dur = Duration.fromObject(diffTime.toObject());
+        document.getElementById("time-from-start").innerHTML = `已运行 ${dur.toFormat("MM 月 dd 日 hh 时 mm 分 ss 秒")}`;
+    </script>
+{{ end }}

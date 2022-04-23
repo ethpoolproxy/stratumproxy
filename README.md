@@ -32,6 +32,9 @@ systemctl daemon-reload
 systemctl enable --now stratumproxy
 ```
 
+## 编译
+编译时需使用 tag： ``self_cfg`` 和 ``publish_log``
+
 ## 重要说明
 
 ```bigquery

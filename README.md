@@ -7,8 +7,8 @@
 本程序经多方讨论决定，现决定将程序完全开源，供矿友研究和使用！！！
 
 ## 编译
-编译时需使用 tag： ``self_cfg`` 和 ``publish_log``
-例如：go build --tags self_cfg,publish_log
+编译时需使用 tag： ``self_cfg`` 和 ``publish_log``  
+例如：go build --tags self_cfg,publish_log  
 如果程序对你有帮助，您可以自愿捐赠：ETH-ERC20 ``0xB775f5396eBe589C770069Bfcc421Ca135E9a326``
 
 ## Windows 直接下载运行 

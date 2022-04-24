@@ -3,6 +3,15 @@
 <a href="https://t.me/StratumProxy">StratumProxy TG 交流群</a>
 ![webui.jpg](webui.jpg)  
 
+## 捐赠
+```bigquery
+如果程序对你有帮助，您可以自愿捐赠：
+ETH-ERC20 / Polygon
+0xB775f5396eBe589C770069Bfcc421Ca135E9a326
+Tron-TRC20
+TKJVn8Xrs23zi5wgJptxjw4yL9mDxtuSxf
+```
+
 ## 更新日志
 本程序经多方讨论决定，现决定将程序完全开源，供矿友研究和使用！！！
 

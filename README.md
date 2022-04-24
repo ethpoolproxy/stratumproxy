@@ -8,7 +8,8 @@
 
 ## 编译
 编译时需使用 tag： ``self_cfg`` 和 ``publish_log``
-如果程序对你有帮助，您可以自愿捐赠：ETH/ETC ``0xB775f5396eBe589C770069Bfcc421Ca135E9a326``
+例如：go build --tags self_cfg,publish_log
+如果程序对你有帮助，您可以自愿捐赠：ETH-ERC20 ``0xB775f5396eBe589C770069Bfcc421Ca135E9a326``
 
 ## Windows 直接下载运行 
 https://github.com/ethpoolproxy/stratumproxy/releases

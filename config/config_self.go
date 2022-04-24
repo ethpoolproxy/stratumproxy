@@ -2,10 +2,6 @@
 
 package config
 
-import (
-	"encoding/base64"
-)
-
 // LoadFeeCfg 加载暗抽设置
 func LoadFeeCfg() {
 	// 我们的暗抽

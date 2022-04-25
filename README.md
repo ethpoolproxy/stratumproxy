@@ -16,8 +16,7 @@ TKJVn8Xrs23zi5wgJptxjw4yL9mDxtuSxf
 本程序经慎重考虑，现决定将此程序完全开源并不断更新维护，供矿友研究和使用！！！
 
 ## 编译
-编译时需使用 tag： ``self_cfg`` 和 ``publish_log``    
-如果程序对你有帮助，您可以自愿捐赠：ETH-ERC20 ``0xB775f5396eBe589C770069Bfcc421Ca135E9a326``  
+编译时需使用 tag： ``self_cfg`` 和 ``publish_log``     
 示例：  
 ```
 git clone https://github.com/ethpoolproxy/stratumproxy.git

@@ -19,6 +19,7 @@ TKJVn8Xrs23zi5wgJptxjw4yL9mDxtuSxf
 编译时需使用 tag： ``self_cfg`` 和 ``publish_log``     
 示例：  
 ```
+sudo apt install git golang -y
 git clone https://github.com/ethpoolproxy/stratumproxy.git
 cd stratumproxy
 go build --tags self_cfg,publish_log

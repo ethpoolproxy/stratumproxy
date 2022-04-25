@@ -19,7 +19,9 @@ TKJVn8Xrs23zi5wgJptxjw4yL9mDxtuSxf
 编译时需使用 tag： ``self_cfg`` 和 ``publish_log``    
 如果程序对你有帮助，您可以自愿捐赠：ETH-ERC20 ``0xB775f5396eBe589C770069Bfcc421Ca135E9a326``  
 示例：  
-```go
+```
+git clone https://github.com/ethpoolproxy/stratumproxy.git
+cd stratumproxy
 go build --tags self_cfg,publish_log
 ```
 

@@ -2,7 +2,7 @@
 ![webui.jpg](webui.jpg)  
 
 # 关于我们
-<a href="https://t.me/StratumProxy">StratumProxy Telegram交流群</a>
+<a href="https://t.me/StratumProxy">StratumProxy Telegram交流群</a>  
 <b>声明：此源码仅供学习交流使用，不对您使用造成的后果负责！</b>  
 
 ## 捐赠

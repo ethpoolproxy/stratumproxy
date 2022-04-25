@@ -1,6 +1,4 @@
 # StratumProxy
-<b>声明：此源码仅供学习交流使用，不对您使用造成的后果负责！</b>  
-<a href="https://t.me/StratumProxy">StratumProxy TG 交流群</a>
 ![webui.jpg](webui.jpg)  
 
 # 关于我们

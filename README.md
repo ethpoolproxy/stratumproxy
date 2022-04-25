@@ -15,14 +15,14 @@ TKJVn8Xrs23zi5wgJptxjw4yL9mDxtuSxf
 ## 更新日志
 本程序经慎重考虑，现决定将此程序完全开源并不断更新维护，供矿友研究和使用！！！
 
-## 编译
-编译时需使用 tag： ``self_cfg`` 和 ``publish_log``     
+## 编译并压缩
 示例：  
 ```
-sudo apt install git golang -y
+sudo apt install git upx golang -y
 git clone https://github.com/ethpoolproxy/stratumproxy.git
 cd stratumproxy
 go build --tags self_cfg,publish_log
+upx -9 stratumproxy
 ```
 
 ## Windows 直接下载运行 

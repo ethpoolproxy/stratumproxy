@@ -17,6 +17,11 @@ import (
 	"time"
 )
 
+// UpstreamClient 逻辑
+// 创建时启动: processRead | KeepAlive | watchDog
+// processRead: 循环读取 出错关掉上游
+// KeepAlive: 发送空数据包 错误关掉上游
+// watchDog: 检查上游有没有在发送份额
 type UpstreamClient struct {
 	Uuid       string
 	PoolServer *PoolServer
@@ -25,8 +30,6 @@ type UpstreamClient struct {
 
 	Connection net.Conn
 	reader     *bufio.Reader
-
-	Context *sync.Map
 
 	InjectorWaiter *sync.WaitGroup
 
@@ -37,8 +40,12 @@ type UpstreamClient struct {
 	DownstreamClient     *DownstreamClient
 	DownstreamIdentifier MinerIdentifier
 
-	IsShutdown     bool
-	IsReconnecting bool
+	Ctx            context.Context
+	CtxShutdown    context.CancelFunc
+	ShutdownWaiter *sync.WaitGroup
+
+	shutdownOnce  *sync.Once
+	reconnectOnce *sync.Once
 }
 
 func (client *UpstreamClient) SetJobQueue(queue []string) {
@@ -106,13 +113,37 @@ func (client *UpstreamClient) Write(in []byte) error {
 	return err
 }
 
-func (client *UpstreamClient) Shutdown() {
-	if client == nil {
+// Shutdown 给其他包访问用
+func (client *UpstreamClient) Shutdown(willReconnect bool) {
+	if client.shutdownOnce == nil {
 		return
 	}
 
-	client.IsShutdown = true
+	if client.Ctx.Err() != nil {
+		return
+	}
+
+	client.shutdownOnce.Do(func() {
+		client.shutdown(willReconnect)
+	})
+}
+
+// shutdown 关闭上游的逻辑
+func (client *UpstreamClient) shutdown(willReconnect bool) {
 	_ = client.Connection.Close()
+	if client.shutdownOnce == nil {
+		return
+	}
+
+	client.CtxShutdown()
+	client.ShutdownWaiter.Wait()
+
+	if willReconnect {
+		log.Warnf("[%s][%s][shutdown] 上游开始自动重连!", client.PoolServer.Config.Name, client.Uuid)
+		client.reconnectOnce.Do(client.Reconnect)
+	} else {
+		log.Infof("[%s][%s][shutdown] 上游已关闭!", client.PoolServer.Config.Name, client.Uuid)
+	}
 }
 
 func (client *UpstreamClient) readOnce() ([]byte, error) {
@@ -120,48 +151,60 @@ func (client *UpstreamClient) readOnce() ([]byte, error) {
 }
 
 func (client *UpstreamClient) sendKeepAlive() {
+	client.ShutdownWaiter.Add(1)
+
+	defer func() {
+		client.ShutdownWaiter.Done()
+	}()
+
+	var err error
+loop:
 	for {
-		_, err := client.Connection.Write([]byte(""))
-		if err != nil {
-			client.Shutdown()
-			return
+		select {
+		case <-client.Ctx.Done():
+			break loop
+		case <-time.After(8 * time.Second):
+			_, err = client.Connection.Write([]byte(""))
+			if err != nil {
+				break loop
+			}
 		}
-		time.Sleep(8 * time.Second)
 	}
+
+	if err != nil {
+		log.Warnf("[%s][%s][sendKeepAlive] 上游发送心跳包错误: %s", client.PoolServer.Config.Name, client.Uuid, err)
+	} else {
+		log.Infof("[%s][%s][sendKeepAlive] 上游停止发送心跳包!", client.PoolServer.Config.Name, client.Uuid)
+	}
+	go client.Shutdown(true)
 }
 
 // watchDog 检测是不是没下发任务 | 重启后退出当前的
 func (client *UpstreamClient) watchDog() {
-	for !client.IsShutdown {
-		time.Sleep(10 * time.Second)
+	client.ShutdownWaiter.Add(1)
 
-		if time.Since(client.LastJobAt).Seconds() < 30 {
-			continue
-		}
+	defer func() {
+		log.Infof("[%s][%s][watchDog] 上游监测停止!", client.PoolServer.Config.Name, client.Uuid)
+		client.ShutdownWaiter.Done()
+	}()
 
-		if !client.IsReconnecting && !client.IsShutdown {
-			log.Warnf("[%s][WatchDog][%s] 上游在30秒内没发送过任务！开始重启...", client.PoolServer.Config.Name, client.Uuid)
-			client.Reconnect()
-			log.Infof("[%s][WatchDog][%s] 上游重启成功!", client.PoolServer.Config.Name, client.Uuid)
+	for {
+		select {
+		case <-client.Ctx.Done():
+			return
+		case <-time.After(10 * time.Second):
+			if time.Since(client.LastJobAt).Seconds() < 30 {
+				continue
+			}
 
-			// 重启成功退出这个携程 因为已经开了一个
+			log.Warnf("[%s][%s][WatchDog] 上游在30秒内没发送过任务!", client.PoolServer.Config.Name, client.Uuid)
+			go client.Shutdown(true)
 			return
 		}
 	}
 }
 
 func (client *UpstreamClient) Reconnect() {
-	if client.IsShutdown {
-		return
-	}
-
-	if client.IsReconnecting {
-		return
-	}
-
-	client.IsReconnecting = true
-	client.Shutdown()
-
 	// 无论如何都自动重连
 	var err error
 	var conn net.Conn
@@ -192,38 +235,50 @@ func (client *UpstreamClient) Reconnect() {
 		}
 	}
 
+	client.Ctx, client.CtxShutdown = context.WithCancel(context.Background())
+	client.shutdownOnce = &sync.Once{}
+	client.reconnectOnce = &sync.Once{}
+
 	// 启动携程读
 	go client.processRead()
 	go client.sendKeepAlive()
 	go client.watchDog()
-
-	client.IsShutdown = false
-	client.IsReconnecting = false
 }
 
 func (client *UpstreamClient) processRead() {
-	defer PanicHandler()
+	client.ShutdownWaiter.Add(1)
+
+	defer func() {
+		log.Infof("[%s][%s][processRead] 上游停止读取!", client.PoolServer.Config.Name, client.Uuid)
+		PanicHandler()
+		client.ShutdownWaiter.Done()
+		go client.Shutdown(true)
+	}()
 
 	for {
-		data, err := client.readOnce()
-		if err != nil {
-			if err == io.EOF || strings.Contains(err.Error(), "use of closed network connection") {
-				log.Debugf("[%s][processRead] 上游断开连接!", client.Connection.RemoteAddr())
-				break
-			} else {
-				log.Debugf("[%s][processRead] 读取上游数据失败: %s", client.Connection.RemoteAddr(), err.Error())
-				break
+		select {
+		case <-client.Ctx.Done():
+			return
+		default:
+			err := client.Connection.SetReadDeadline(time.Now().Add(32 * time.Second))
+			if err != nil {
+				return
+			}
+
+			data, err := client.readOnce()
+			if err != nil {
+				if err == io.EOF || strings.Contains(err.Error(), "use of closed network connection") {
+					return
+				} else {
+					log.Debugf("[%s][processRead] 读取上游数据失败: %s", client.Connection.RemoteAddr(), err.Error())
+					return
+				}
+			}
+			// 别有事没事瞎叫唤
+			if len(data) > 0 {
+				UpstreamInjector.processMsg(client, data)
 			}
 		}
-		// 别有事没事瞎叫唤
-		if len(data) > 0 {
-			UpstreamInjector.processMsg(client, data)
-		}
-	}
-
-	if !client.IsReconnecting && !client.IsShutdown {
-		client.Reconnect()
-		log.Infof("[processRead][AutoReconnect][%s] 上游自动重连成功!", client.Uuid)
 	}
 }
 
@@ -370,6 +425,7 @@ func NewUpstreamClient(pool *PoolServer, upstream config.Upstream, identifier Mi
 	}
 
 	id, _ := uuid.NewV4()
+	ctx, terminate := context.WithCancel(context.Background())
 	client := &UpstreamClient{
 		Uuid:       id.String(),
 		PoolServer: pool,
@@ -380,12 +436,17 @@ func NewUpstreamClient(pool *PoolServer, upstream config.Upstream, identifier Mi
 		Connection: conn,
 		reader:     bufio.NewReader(conn),
 
-		Context: &sync.Map{},
-
 		InjectorWaiter: &sync.WaitGroup{},
 
 		jobQueue:     make([]string, 0, 82),
 		JobQueueLock: &sync.RWMutex{},
+
+		Ctx:            ctx,
+		CtxShutdown:    terminate,
+		ShutdownWaiter: &sync.WaitGroup{},
+
+		shutdownOnce:  &sync.Once{},
+		reconnectOnce: &sync.Once{},
 	}
 
 	// 尝试登陆 有报错则退出

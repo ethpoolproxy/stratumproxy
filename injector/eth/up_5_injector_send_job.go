@@ -69,12 +69,12 @@ func UpInjectorSendJob(payload *connection.InjectorUpstreamPayload) {
 	}
 
 	if payload.UpstreamClient.DownstreamClient == nil {
-		payload.UpstreamClient.Shutdown()
+		payload.UpstreamClient.Shutdown(false)
 		return
 	}
 
 	if payload.UpstreamClient.DownstreamClient.WorkerMiner == nil {
-		payload.UpstreamClient.Shutdown()
+		payload.UpstreamClient.Shutdown(false)
 		return
 	}
 

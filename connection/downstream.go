@@ -74,7 +74,7 @@ func (client *DownstreamClient) Shutdown() {
 	}
 
 	if client.Upstream != nil {
-		client.Upstream.Shutdown()
+		client.Upstream.Shutdown(false)
 	}
 
 	if client.WorkerMiner != nil {
@@ -96,7 +96,7 @@ func (client *DownstreamClient) Shutdown() {
 
 func (client *DownstreamClient) ForceShutdown() {
 	if client.Upstream != nil {
-		client.Upstream.Shutdown()
+		client.Upstream.Shutdown(false)
 	}
 
 	_ = client.Connection.Conn.Close()

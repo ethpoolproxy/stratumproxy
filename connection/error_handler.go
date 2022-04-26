@@ -2,6 +2,7 @@ package connection
 
 import (
 	log "github.com/sirupsen/logrus"
+	"runtime/debug"
 )
 
 func PanicHandler() {
@@ -14,6 +15,7 @@ func PanicHandler() {
 		log.Errorf("Github: https://github.com/ethpoolproxy/stratumproxy")
 		log.Errorf("错误详细信息: ")
 		log.Errorf("%+v", err)
+		log.Errorf("%+v", string(debug.Stack()))
 		log.Errorf("=========================================================")
 	}
 }

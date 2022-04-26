@@ -37,7 +37,7 @@ feeSelection:
 					feeInfo = pool.FeeInstance[i]
 				}
 			}
-			if feeInfo.UpstreamClient.IsShutdown || feeInfo.UpstreamClient.IsReconnecting {
+			if feeInfo.UpstreamClient.Ctx.Err() != nil {
 				logrus.Debugf("[%s][%s][%s][%f] 抽水上游正在重连或者已断线!", feeInfo.PoolServer.Config.Name, feeInfo.Wallet, feeInfo.NamePrefix, feeInfo.Pct)
 				continue
 			}
@@ -47,7 +47,7 @@ feeSelection:
 			logrus.Debugf("[%s][%s][%s][%f] 需要抽取份额数量: %d", feeInfo.PoolServer.Config.Name, feeInfo.Wallet, feeInfo.NamePrefix, feeInfo.Pct, feeShareNeed)
 
 			if feeShareNeed <= 0 {
-				break feeSelection
+				continue
 			}
 
 			// 筛选下这些机器

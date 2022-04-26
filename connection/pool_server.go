@@ -147,7 +147,10 @@ func (s *PoolServer) Shutdown(err error) {
 	}
 
 	for _, fee := range s.FeeInstance {
-		fee.UpstreamClient.Shutdown()
+		if fee.UpstreamClient == nil {
+			continue
+		}
+		fee.UpstreamClient.Shutdown(false)
 	}
 
 	s.cancelFunc()
@@ -201,7 +204,7 @@ func (s *PoolServer) Start() error {
 
 	s.Err = PoolStartingErr
 
-	// 放这个位置避免端口开了 但是这里返回后 调用 Shutdown 不会关矿池
+	// 放这个位置避免端口开了 但是这里返回后 调用 shutdown 不会关矿池
 	// 还有一种方案就是把 listener.close 放这前面
 	err = InitFeeUpstreamClient(s)
 	if err != nil {

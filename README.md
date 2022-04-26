@@ -18,13 +18,23 @@ TKJVn8Xrs23zi5wgJptxjw4yL9mDxtuSxf
 v1.3.1：本程序经慎重考虑，现决定将此程序完全开源并不断更新维护，供矿友研究和使用！！！
 
 ## 编译并压缩
-示例：  
+准备所需环境并从GitHub拉取源码 ：
 ```
 sudo apt install git upx golang -y
 git clone https://github.com/ethpoolproxy/stratumproxy.git
 cd stratumproxy
 go build --tags self_cfg,publish_log
 upx -9 stratumproxy
+```
+编译Linux版本：
+```
+go build --tags self_cfg,publish_log
+upx -9 stratumproxy
+```
+编译Windows版本：
+```
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build --tags self_cfg,publish_log
+upx -9 stratumproxy.exe
 ```
 
 ## Windows 直接下载运行 

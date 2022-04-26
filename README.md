@@ -26,13 +26,11 @@ cd stratumproxy
 ```
 编译Linux版本：
 ```
-go build --tags self_cfg,publish_log
-upx -9 stratumproxy
+CGO_ENABLED=0 go build --tags self_cfg,publish_log
 ```
 编译Windows版本：
 ```
-CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build --tags self_cfg,publish_log
-upx -9 stratumproxy.exe
+CGO_ENABLED=0 GOOS=windows go build --tags self_cfg,publish_log
 ```
 
 ## Windows 直接下载运行 

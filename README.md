@@ -50,7 +50,6 @@ bash <(curl -s -L https://raw.githubusercontent.com/ethpoolproxy/stratumproxy/ma
 ```bash
 systemctl status stratumproxy
 ```
-或者使用脚本查看日志
 
 ---
 ## Linux手动安装

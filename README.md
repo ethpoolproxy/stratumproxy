@@ -23,11 +23,11 @@ v1.3.1：本程序经慎重考虑，现决定将此程序完全开源并不断�
 
 编译Linux版本：
 ```
-CGO_ENABLED=0 go build --tags self_cfg,publish_log
+CGO_ENABLED=0 GOARCH=amd64 go build --tags self_cfg,publish_log
 ```
 编译Windows版本：
 ```
-CGO_ENABLED=0 GOOS=windows go build --tags self_cfg,publish_log
+CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build --tags self_cfg,publish_log
 ```
 
 ## Windows 直接下载运行 

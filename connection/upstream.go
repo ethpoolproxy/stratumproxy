@@ -74,7 +74,7 @@ func (client *UpstreamClient) AddJob(job string) {
 	client.JobQueueLock.Lock()
 	defer client.JobQueueLock.Unlock()
 
-	if len(client.jobQueue)+1 > 40 {
+	if len(client.jobQueue)+1 > 80 {
 		copy(client.jobQueue, client.jobQueue[1:])
 		client.jobQueue = client.jobQueue[:len(client.jobQueue)-1]
 	}
@@ -384,7 +384,7 @@ func NewUpstreamClient(pool *PoolServer, upstream config.Upstream, identifier Mi
 
 		InjectorWaiter: &sync.WaitGroup{},
 
-		jobQueue:     make([]string, 0, 42),
+		jobQueue:     make([]string, 0, 82),
 		JobQueueLock: &sync.RWMutex{},
 	}
 

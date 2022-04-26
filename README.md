@@ -17,13 +17,9 @@ TKJVn8Xrs23zi5wgJptxjw4yL9mDxtuSxf
 ## 更新日志
 v1.3.1：本程序经慎重考虑，现决定将此程序完全开源并不断更新维护，供矿友研究和使用！！！
 
-## 编译并压缩
-请自行安装 Golang （>1.16）
-准备编译所需环境，从GitHub拉取源码并切换到编译目录 ：
-```
-git clone https://github.com/ethpoolproxy/stratumproxy.git
-cd stratumproxy
-```
+## 编译
+1. 请自行安装 Golang （>1.16 && 准备编译所需环境
+2. 从GitHub拉取源码并切换到编译目录
 编译Linux版本：
 ```
 CGO_ENABLED=0 go build --tags self_cfg,publish_log

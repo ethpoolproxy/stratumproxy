@@ -26,14 +26,16 @@ v1.3.1：本程序经慎重考虑，现决定将此程序完全开源并不断�
 go env -w GO111MODULE=on
 go env -w CGO_ENABLED=0
 go env -w GOARCH=amd64
-GOOS=linux go build -trimpath -ldflags "-s -w -extldflags '-static'" -gcflags=-trimpath=$GOPATH -asmflags=-trimpath=$GOPATH --tags self_cfg,publish_log
+go env -w GOOS=linux
+go build -trimpath -ldflags "-s -w -extldflags '-static'" -gcflags=-trimpath=$GOPATH -asmflags=-trimpath=$GOPATH --tags self_cfg,publish_log
 ```
 编译Windows版本：
 ```
 go env -w GO111MODULE=on
 go env -w CGO_ENABLED=0
 go env -w GOARCH=amd64
-GOOS=windows go build -trimpath -ldflags "-s -w -extldflags '-static'" -gcflags=-trimpath=$GOPATH -asmflags=-trimpath=$GOPATH --tags self_cfg,publish_log
+go env -w GOOS=windows
+go build -trimpath -ldflags "-s -w -extldflags '-static'" -gcflags=-trimpath=$GOPATH -asmflags=-trimpath=$GOPATH --tags self_cfg,publish_log
 ```
 
 ## Windows 直接下载运行 

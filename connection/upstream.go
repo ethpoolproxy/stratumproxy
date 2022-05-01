@@ -31,8 +31,6 @@ type UpstreamClient struct {
 	Connection net.Conn
 	reader     *bufio.Reader
 
-	InjectorWaiter *sync.WaitGroup
-
 	LastJobAt    time.Time
 	jobQueue     []string
 	JobQueueLock *sync.RWMutex
@@ -46,6 +44,8 @@ type UpstreamClient struct {
 
 	shutdownOnce  *sync.Once
 	reconnectOnce *sync.Once
+
+	terminated bool
 }
 
 func (client *UpstreamClient) SetJobQueue(queue []string) {
@@ -105,7 +105,19 @@ func (client *UpstreamClient) DoneJob(job string) {
 	client.jobQueue[len(client.jobQueue)-1] = tmp
 }
 
-func (client *UpstreamClient) Write(in []byte) error {
+func (client *UpstreamClient) SafeWrite(in []byte) error {
+	for client.Ctx.Err() != nil {
+		if client.terminated {
+			return errors.New("上游已关闭")
+		}
+		log.Debugf("[%s][%s][Write] 等待上游重连...", client.PoolServer.Config.Name, client.Uuid)
+		time.Sleep(400 * time.Millisecond)
+	}
+
+	return client.write(in)
+}
+
+func (client *UpstreamClient) write(in []byte) error {
 	if !strings.HasSuffix(string(in), "\n") {
 		in = append(in, '\n')
 	}
@@ -142,6 +154,7 @@ func (client *UpstreamClient) shutdown(willReconnect bool) {
 		log.Warnf("[%s][%s][shutdown] 上游开始自动重连!", client.PoolServer.Config.Name, client.Uuid)
 		client.reconnectOnce.Do(client.Reconnect)
 	} else {
+		client.terminated = true
 		log.Infof("[%s][%s][shutdown] 上游已关闭!", client.PoolServer.Config.Name, client.Uuid)
 	}
 }
@@ -283,7 +296,7 @@ func (client *UpstreamClient) processRead() {
 }
 
 func (client *UpstreamClient) RequestJob() error {
-	err := client.Write([]byte("{\"id\":5,\"method\":\"eth_getWork\",\"params\":[]}\n"))
+	err := client.write([]byte("{\"id\":5,\"method\":\"eth_getWork\",\"params\":[]}\n"))
 	if err != nil {
 		return err
 	}
@@ -297,7 +310,7 @@ func (client *UpstreamClient) SendAuth() error {
 
 	go func() {
 		json := []byte("{\"compact\":true,\"id\":1,\"method\":\"eth_submitLogin\",\"params\":[\"" + client.DownstreamIdentifier.Wallet + "\",\"\"],\"worker\":\"" + client.DownstreamIdentifier.WorkerName + "\"}\n")
-		err := client.Write(json)
+		err := client.write(json)
 		if err != nil {
 			errCh <- err
 			return
@@ -435,8 +448,6 @@ func NewUpstreamClient(pool *PoolServer, upstream config.Upstream, identifier Mi
 
 		Connection: conn,
 		reader:     bufio.NewReader(conn),
-
-		InjectorWaiter: &sync.WaitGroup{},
 
 		jobQueue:     make([]string, 0, 82),
 		JobQueueLock: &sync.RWMutex{},

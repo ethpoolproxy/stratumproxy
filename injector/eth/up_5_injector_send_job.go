@@ -55,7 +55,6 @@ func UpInjectorSendJob(payload *connection.InjectorUpstreamPayload) {
 				err = c.Write(payload.In)
 				if err != nil {
 					logrus.Debugf("[%s][%s][%s] 上游转发到下游失败: %s", m.PoolServer.Config.Name, m.GetID(), c.Connection.Conn.RemoteAddr().String(), err.Error())
-					payload.UpstreamClient.DownstreamClient.Shutdown()
 					c.Shutdown()
 					return true
 				}

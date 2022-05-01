@@ -42,9 +42,6 @@ func (injector *InjectorDownstream) processMsg(client *DownstreamClient, in []by
 		DownstreamClient: client,
 	}
 
-	defer client.InjectorWaiter.Done()
-	client.InjectorWaiter.Wait()
-	client.InjectorWaiter.Add(1)
 	for _, p := range client.Connection.PoolServer.Protocol.DownstreamInjectorProcessors {
 		p(payload)
 		// 如果这次的处理结果设置了终止标志，则终止后续处理

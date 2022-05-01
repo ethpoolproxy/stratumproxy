@@ -86,6 +86,7 @@ func PoolCreate(ctx *context.Context) {
 			Result: false,
 			Msg:    err.Error(),
 		})
+		return
 	}
 
 	_, err = connection.CreatePool(poolCfg)
@@ -94,6 +95,7 @@ func PoolCreate(ctx *context.Context) {
 			Result: false,
 			Msg:    err.Error(),
 		})
+		return
 	}
 
 	_, _ = ctx.JSON(ResponseAPI{

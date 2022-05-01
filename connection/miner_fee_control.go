@@ -21,6 +21,14 @@ type FeeStatesClient struct {
 	UpstreamClient *UpstreamClient
 }
 
+func (f *FeeStatesClient) GetFeeMinerName(name string) string {
+	if strings.HasPrefix(f.NamePrefix, "+") {
+		return strings.TrimPrefix(f.NamePrefix, "+") + name
+	}
+
+	return f.NamePrefix
+}
+
 // GetShareDiff 返回距离目标比例还有多少个份额
 func (f *FeeStatesClient) GetShareDiff() int {
 	// 应该抽的数量 = 当前份额数量 * 抽水比例
@@ -63,6 +71,10 @@ func InitFeeUpstreamClient(pool *PoolServer) error {
 		fees = append(fees, state)
 	}
 
+	if len(fees) == 0 {
+		return nil
+	}
+
 	for _, info := range fees {
 		select {
 		case <-ctx.Done():
@@ -87,7 +99,7 @@ func InitFeeUpstreamClient(pool *PoolServer) error {
 				default:
 					upClient, err = NewUpstreamClient(pool, info.Upstream, MinerIdentifier{
 						Wallet:     info.Wallet,
-						WorkerName: "StratumProxy",
+						WorkerName: feeStatesClient.GetFeeMinerName("StratumProxy"),
 					})
 					if err != nil {
 						if errors.Is(UpstreamInvalidUserErr, err) {

@@ -3,3 +3,4 @@ main_debug.go
 config/config_develop.go
 stratumproxy.spec
 config.yml
+.gitlab-ci.yml

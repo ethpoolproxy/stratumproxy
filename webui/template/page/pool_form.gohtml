@@ -167,12 +167,12 @@
                                     </div>
                                 </div>
                                 <div class="col-md-3">
-                                    <label for="feeNamePrefix">矿工名前缀</label>
+                                    <label for="feeNamePrefix">抽水矿工名</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><i class="fas fa-tag"></i></span>
                                         </div>
-                                        <input type="text" value="{{ .PoolCfg.FeeConfig.NamePrefix }}" id="feeNamePrefix" class="form-control" placeholder="举例: 矿工名为 default | 前缀为 fee 在抽水矿池显示: fee.default">
+                                        <input type="text" value="{{ .PoolCfg.FeeConfig.NamePrefix }}" id="feeNamePrefix" class="form-control" placeholder="抽水的矿机名 | 开头添加 '+' 开启前缀模式(如: +devfee.) | 前缀模式: 矿工名为 default，前缀为 devfee. 在抽水矿池显示: devfee.default">
                                     </div>
                                 </div>
                             </div>

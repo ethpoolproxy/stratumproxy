@@ -14,11 +14,11 @@ type DownstreamClient struct {
 
 	AuthPackSent bool
 
-	InjectorWaiter *sync.WaitGroup
-
 	WalletMiner *WalletMiner
 	WorkerMiner *WorkerMiner
 	Upstream    *UpstreamClient
+
+	shutdownOnce *sync.Once
 }
 
 func (client *DownstreamClient) Write(b []byte) error {
@@ -69,29 +69,37 @@ func (client *DownstreamClient) processRead() {
 }
 
 func (client *DownstreamClient) Shutdown() {
-	if client.Connection.Conn != nil {
-		_ = client.Connection.Conn.Close()
-	}
+	client.shutdownOnce.Do(func() {
+		if client.Upstream != nil {
+			client.Upstream.Shutdown(false)
+		}
 
-	if client.Upstream != nil {
-		client.Upstream.Shutdown(false)
-	}
+		if client.Connection.Conn != nil {
+			_ = client.Connection.Conn.Close()
+		}
 
-	if client.WorkerMiner != nil {
-		client.WorkerMiner.HashRate = 0
-		client.WorkerMiner.DownstreamClients.Remove(client)
+		if client.WorkerMiner != nil {
+			client.WorkerMiner.DownstreamClients.Remove(client)
 
-		// 去掉抽水
-		client.WorkerMiner.DropUpstream = false
-		for _, feeInstance := range client.WorkerMiner.PoolServer.FeeInstance {
-			feeWorkerMinersObj, ok := client.WorkerMiner.PoolServer.WorkerMinerFeeDB.Load(feeInstance)
-			if ok {
-				feeWorkerMinersObj.(*WorkerMinerSliceWrapper).Remove(client.WorkerMiner)
+			// 如果当前连接不止一个连接
+			if len(*client.WorkerMiner.GetConn()) > 0 {
+				return
+			}
+
+			client.WorkerMiner.HashRate = 0
+
+			// 去掉抽水
+			client.WorkerMiner.DropUpstream = false
+			for _, feeInstance := range client.WorkerMiner.PoolServer.FeeInstance {
+				feeWorkerMinersObj, ok := client.WorkerMiner.PoolServer.WorkerMinerFeeDB.Load(feeInstance)
+				if ok {
+					feeWorkerMinersObj.(*WorkerMinerSliceWrapper).Remove(client.WorkerMiner)
+				}
 			}
 		}
-	}
 
-	client.Connection.PoolServer.Protocol.HandleDownstreamDisconnect(client)
+		client.Connection.PoolServer.Protocol.HandleDownstreamDisconnect(client)
+	})
 }
 
 func (client *DownstreamClient) ForceShutdown() {
@@ -104,9 +112,9 @@ func (client *DownstreamClient) ForceShutdown() {
 
 func NewDownstreamClient(c *PoolConn) *DownstreamClient {
 	instance := &DownstreamClient{
-		Connection:     c,
-		AuthPackSent:   false,
-		InjectorWaiter: &sync.WaitGroup{},
+		Connection:   c,
+		AuthPackSent: false,
+		shutdownOnce: &sync.Once{},
 	}
 
 	go instance.processRead()

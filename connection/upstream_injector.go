@@ -30,9 +30,6 @@ func (injector *InjectorUpstream) processMsg(client *UpstreamClient, in []byte) 
 		UpstreamClient: client,
 	}
 
-	defer client.InjectorWaiter.Done()
-	client.InjectorWaiter.Wait()
-	client.InjectorWaiter.Add(1)
 	for _, p := range client.PoolServer.Protocol.UpstreamInjectorProcessors {
 		if p.DisableWhenFee && client.DownstreamClient == nil {
 			continue

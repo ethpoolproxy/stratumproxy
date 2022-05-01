@@ -60,7 +60,7 @@ func DownInjectorSubmitWork(payload *connection.InjectorDownstreamPayload) {
 				payload.DownstreamClient.WorkerMiner.AddFeeShare(1)
 
 				dst = feeInstance.UpstreamClient
-				submitWork.Worker = feeInstance.NamePrefix + submitWork.Worker
+				submitWork.Worker = feeInstance.GetFeeMinerName(submitWork.Worker)
 				break
 			}
 		}
@@ -68,12 +68,12 @@ func DownInjectorSubmitWork(payload *connection.InjectorDownstreamPayload) {
 
 	// 如果还找不到就丢弃
 	if dst == nil {
-		logrus.Debugf("[%s][%s][DownInjectorSubmitWork][%s] 丢弃 Share | Raw: [%s]", payload.DownstreamClient.Connection.PoolServer.Config.Name, payload.DownstreamClient.Connection.Conn.RemoteAddr(), payload.DownstreamClient.WorkerMiner.GetID(), string(payload.In))
+		logrus.Warnf("[%s][%s][DownInjectorSubmitWork][%s] 丢弃 Share | Raw: [%s]", payload.DownstreamClient.Connection.PoolServer.Config.Name, payload.DownstreamClient.Connection.Conn.RemoteAddr(), payload.DownstreamClient.WorkerMiner.GetID(), string(payload.In))
 		return
 	}
 
 	dstOut, _ := submitWork.Build()
-	err = dst.Write(dstOut)
+	err = dst.SafeWrite(dstOut)
 	if err != nil {
 		payload.DownstreamClient.Upstream.Reconnect()
 		return

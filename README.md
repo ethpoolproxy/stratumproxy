@@ -5,7 +5,11 @@
 <a href="https://t.me/StratumProxy">StratumProxy Telegram交流群</a>  
 <b>声明：此源码仅供学习交流使用，不对您使用造成的后果负责！</b>  
 
+## 特别感谢
+- [TG] @FF8171346 慷慨提供自家矿厂的 110GHs 算力来 ~~(给我乱搞 蹦了好几次)~~ 测试软件
+
 ## 捐赠
+
 ```bigquery
 如果程序对你有帮助，您可以自愿捐赠：
 ETH-ERC20 / Polygon

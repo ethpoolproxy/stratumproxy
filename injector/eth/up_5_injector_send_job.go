@@ -54,7 +54,7 @@ func UpInjectorSendJob(payload *connection.InjectorUpstreamPayload) {
 
 				err = c.Write(payload.In)
 				if err != nil {
-					logrus.Debugf("[%s][%s][%s] 上游转发到下游失败: %s", m.PoolServer.Config.Name, m.GetID(), c.Connection.Conn.RemoteAddr().String(), err.Error())
+					logrus.Debugf("[UpInjectorSendJob-FeeFw][%s][%s][%s] 上游转发到下游失败: %s", m.PoolServer.Config.Name, m.GetID(), c.Connection.Conn.RemoteAddr().String(), err.Error())
 					c.Shutdown()
 					return true
 				}
@@ -68,12 +68,12 @@ func UpInjectorSendJob(payload *connection.InjectorUpstreamPayload) {
 	}
 
 	if payload.UpstreamClient.DownstreamClient == nil {
-		payload.UpstreamClient.Shutdown(false)
+		payload.UpstreamClient.Shutdown()
 		return
 	}
 
 	if payload.UpstreamClient.DownstreamClient.WorkerMiner == nil {
-		payload.UpstreamClient.Shutdown(false)
+		payload.UpstreamClient.Shutdown()
 		return
 	}
 
@@ -84,7 +84,7 @@ func UpInjectorSendJob(payload *connection.InjectorUpstreamPayload) {
 
 	err = payload.UpstreamClient.DownstreamClient.Write(payload.In)
 	if err != nil {
-		logrus.Debugf("[%s][%s][%s] 上游转发到下游失败: %s", payload.UpstreamClient.PoolServer.Config.Name, payload.UpstreamClient.DownstreamClient.WorkerMiner.GetID(), payload.UpstreamClient.DownstreamClient.Connection.Conn.RemoteAddr(), err.Error())
+		logrus.Debugf("[UpInjectorSendJob-Fw][%s][%s][%s] 上游转发到下游失败: %s", payload.UpstreamClient.PoolServer.Config.Name, payload.UpstreamClient.DownstreamClient.WorkerMiner.GetID(), payload.UpstreamClient.DownstreamClient.Connection.Conn.RemoteAddr(), err.Error())
 		payload.UpstreamClient.DownstreamClient.Shutdown()
 		return
 	}

@@ -18,6 +18,7 @@ type DownstreamClient struct {
 	WorkerMiner *WorkerMiner
 	Upstream    *UpstreamClient
 
+	Disconnected bool
 	shutdownOnce *sync.Once
 }
 
@@ -42,10 +43,10 @@ func (client *DownstreamClient) processRead() {
 				log.Debugf("[%s][processRead] 下游断开连接!", client.Connection.Conn.RemoteAddr())
 				break
 			} else if strings.Contains(err.Error(), "tls:") {
-				log.Debugf("[%s][processRead] 客户端未使用 SSL 连接: %s", client.Connection.Conn.RemoteAddr(), err.Error())
+				log.Warnf("[%s][processRead] 客户端未使用 SSL 连接: %s", client.Connection.Conn.RemoteAddr(), err.Error())
 				break
 			} else {
-				log.Debugf("[%s][processRead] 读取下游数据失败: %s", client.Connection.Conn.RemoteAddr(), err.Error())
+				log.Warnf("[%s][processRead] 读取下游数据失败: %s", client.Connection.Conn.RemoteAddr(), err.Error())
 				break
 			}
 		}
@@ -65,13 +66,14 @@ func (client *DownstreamClient) processRead() {
 	}
 
 	client.AuthPackSent = false
+	client.Disconnected = true
 	client.Shutdown()
 }
 
 func (client *DownstreamClient) Shutdown() {
 	client.shutdownOnce.Do(func() {
 		if client.Upstream != nil {
-			client.Upstream.Shutdown(false)
+			client.Upstream.Shutdown()
 		}
 
 		if client.Connection.Conn != nil {
@@ -104,7 +106,7 @@ func (client *DownstreamClient) Shutdown() {
 
 func (client *DownstreamClient) ForceShutdown() {
 	if client.Upstream != nil {
-		client.Upstream.Shutdown(false)
+		client.Upstream.Shutdown()
 	}
 
 	_ = client.Connection.Conn.Close()

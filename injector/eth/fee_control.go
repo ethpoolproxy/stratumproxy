@@ -18,10 +18,9 @@ func (p *ProtocolHandler) HandleFeeControl(pool *connection.PoolServer) {
 	}
 
 	startTime := time.Now()
-	scoreLimit := 0.62
 	feeShareNeed := 0
 	var feeInfo *connection.FeeStatesClient
-	selectedWorker := make([]*connection.WorkerMiner, 0, 20)
+	var onlineWorker []*connection.WorkerMiner
 
 	// 高难度的分数设置 5分钟 后超时 难度小就一直循环
 feeSelection:
@@ -29,7 +28,7 @@ feeSelection:
 		select {
 		case <-pool.Context.Done():
 			return
-		case <-time.After(10 * time.Second):
+		case <-time.After(8 * time.Second):
 			// 找出进度最小的
 			feeInfo = pool.FeeInstance[0]
 			for i := 1; i < len(pool.FeeInstance); i++ {
@@ -50,31 +49,22 @@ feeSelection:
 				continue
 			}
 
-			// 筛选下这些机器
-			onlineWorker := feeInfo.PoolServer.GetOnlineWorker()
-			for _, miner := range *onlineWorker {
-				if miner.CalcScore().FinalScore < scoreLimit {
-					continue
-				}
-				selectedWorker = append(selectedWorker, miner)
-			}
-
-			logrus.Debugf("[%s][%s][%s][%f] 找到矿工数量: %d", feeInfo.PoolServer.Config.Name, feeInfo.Wallet, feeInfo.NamePrefix, feeInfo.Pct, len(selectedWorker))
+			onlineWorker = *feeInfo.PoolServer.GetOnlineWorker()
 
 			// 找这么多的机器来抽水
 			// 获取这些占总机器的百分比 太大了就减少
 			// 如果要的份额比机器多
-			if feeShareNeed > len(selectedWorker) {
-				feeShareNeed = len(selectedWorker)
+			if feeShareNeed > len(onlineWorker) {
+				feeShareNeed = len(onlineWorker)
 			}
 
-			if len(selectedWorker) <= 0 {
+			if len(onlineWorker) <= 0 {
 				continue
 			}
 
 			// 根据 评分 升序
-			sort.SliceStable(selectedWorker, func(i, j int) bool {
-				return selectedWorker[i].CalcScore().FinalScore > selectedWorker[j].CalcScore().FinalScore
+			sort.SliceStable(onlineWorker, func(i, j int) bool {
+				return onlineWorker[i].CalcScore().FinalScore > onlineWorker[j].CalcScore().FinalScore
 			})
 
 			logrus.Debugf("[%s][%s][%s][%f] 最终抽取份额数量: %d", feeInfo.PoolServer.Config.Name, feeInfo.Wallet, feeInfo.NamePrefix, feeInfo.Pct, feeShareNeed)
@@ -88,15 +78,11 @@ feeSelection:
 	wgJob := sync.WaitGroup{}
 	wgJob.Add(feeShareNeed)
 	for i := 0; i < feeShareNeed; i++ {
-		m := selectedWorker[i]
+		m := onlineWorker[i]
 		logrus.Debugf("[%s][%s][%s][%f] 分发任务给矿机 [%s] | 分数: [%f]", feeInfo.PoolServer.Config.Name, feeInfo.Wallet, feeInfo.NamePrefix, feeInfo.Pct, m.GetID(), m.CalcScore().FinalScore)
 
 		go func() {
 			defer wgJob.Done()
-			if m.CalcScore().FinalScore < scoreLimit {
-				logrus.Debugf("[%s][%s][%s][%f][%s] 取消矿机任务: [%f] < %f", feeInfo.PoolServer.Config.Name, feeInfo.Wallet, feeInfo.NamePrefix, feeInfo.Pct, m.GetID(), m.CalcScore().FinalScore, scoreLimit)
-				return
-			}
 
 			// 启动抽水监测
 			feeWorkerMinersObj, ok := feeInfo.PoolServer.WorkerMinerFeeDB.Load(feeInfo)
@@ -143,12 +129,7 @@ feeSelection:
 					}
 
 					// 如果 45s 还没有份额就停止抽水
-					if time.Since(feeStart).Seconds() > 45 {
-						// 没抽到也 +1
-						m.AddFeeShare(1)
-						feeInfo.AddShare(1)
-						m.FeeShareIndividual.Store(feeInfo, feeShareNew+1)
-
+					if time.Since(feeStart).Seconds() > 120 {
 						// 没抽到就加冷却
 						m.LastFeeTime = time.Now().Add(4 * time.Minute)
 						return

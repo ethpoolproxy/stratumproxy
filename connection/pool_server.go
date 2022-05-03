@@ -140,6 +140,12 @@ func NewPoolServer(config config.Pool) (*PoolServer, error) {
 }
 
 func (s *PoolServer) Shutdown(err error) {
+	if err != nil {
+		s.Err = err
+	} else {
+		s.Err = PoolStoppingErr
+	}
+
 	for _, miner := range *s.GetOnlineWorker() {
 		for _, client := range *miner.GetConn() {
 			client.Shutdown()
@@ -150,19 +156,13 @@ func (s *PoolServer) Shutdown(err error) {
 		if fee.UpstreamClient == nil {
 			continue
 		}
-		fee.UpstreamClient.Shutdown(false)
+		fee.UpstreamClient.Shutdown()
 	}
 
 	s.cancelFunc()
 
 	s.Wg.Wait()
 	s.ResetDB()
-
-	if err != nil {
-		s.Err = err
-	} else {
-		s.Err = PoolStoppingErr
-	}
 
 	if s.Err != nil && errors.Is(PoolStoppingErr, s.Err) {
 		s.Err = PoolStoppedErr

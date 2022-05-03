@@ -73,9 +73,5 @@ func DownInjectorSubmitWork(payload *connection.InjectorDownstreamPayload) {
 	}
 
 	dstOut, _ := submitWork.Build()
-	err = dst.SafeWrite(dstOut)
-	if err != nil {
-		payload.DownstreamClient.Upstream.Reconnect()
-		return
-	}
+	go dst.SafeWrite(dstOut)
 }

@@ -37,7 +37,7 @@ func (injector *InjectorUpstream) processMsg(client *UpstreamClient, in []byte) 
 		p.Processors(payload)
 		if payload.IsCancelled {
 			if payload.ShouldDisconnect {
-				client.Shutdown(false)
+				client.Shutdown()
 			}
 			break
 		}

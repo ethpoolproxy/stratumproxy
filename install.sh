@@ -31,7 +31,7 @@ install() {
         wget https://github.com/ethpoolproxy/stratumproxy/releases/download/v1.3.1/stratumproxy_v1.3.1 -O /usr/bin/stratumproxy
         wget https://raw.githubusercontent.com/ethpoolproxy/stratumproxy/master/stratumproxy.service -O /etc/systemd/system/stratumproxy.service
         ;;
-    1)
+    2)
         wget https://github.com/ethpoolproxy/stratumproxy/releases/download/v1.3.2/stratumproxy_v1.3.2 -O /usr/bin/stratumproxy
         wget https://raw.githubusercontent.com/ethpoolproxy/stratumproxy/master/stratumproxy.service -O /etc/systemd/system/stratumproxy.service
         ;;

@@ -24,17 +24,25 @@ install() {
 
     echo "请选择版本"
     echo "  1、v1.3.1 | 代号 [Rinako]"
-    read -p "$(echo -e "请输入[1]：")" choose
+    echo "  2、v1.3.2 | 代号 [Rinako]"
+    echo "  3、v1.4.0 | 代号 [Yoshino]"
+    read -p "$(echo -e "请输入[1-3]：")" choose
     case $choose in
     1)
         wget https://github.com/ethpoolproxy/stratumproxy/releases/download/v1.3.1/stratumproxy_v1.3.1 -O /usr/bin/stratumproxy
-        wget https://raw.githubusercontent.com/ethpoolproxy/stratumproxy/master/stratumproxy.service -O /etc/systemd/system/stratumproxy.service
+        ;;
+    2)
+        wget https://github.com/ethpoolproxy/stratumproxy/releases/download/v1.3.2/stratumproxy_v1.3.2 -O /usr/bin/stratumproxy
+        ;;
+    3)
+        wget https://github.com/ethpoolproxy/stratumproxy/releases/download/v1.4.0/stratumproxy_v1.4.0 -O /usr/bin/stratumproxy
         ;;
     *)
         echo "请输入正确的数字"
         ;;
     esac
-
+    
+    wget https://raw.githubusercontent.com/ethpoolproxy/stratumproxy/master/stratumproxy.service -O /etc/systemd/system/stratumproxy.service
     chmod +x /usr/bin/stratumproxy
 
     echo "正在启动..."

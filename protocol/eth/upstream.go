@@ -10,7 +10,7 @@ type ResponseGeneral struct {
 	Id      int    `json:"id"`
 	Jsonrpc string `json:"jsonrpc"`
 	Result  bool   `json:"result"`
-	Error   string `json:"error"`
+	Error   string `json:"error,omitempty"`
 }
 
 func (resp *ResponseGeneral) Parse(data []byte) error {
@@ -38,7 +38,7 @@ func (resp ResponseGeneral) Build() ([]byte, error) {
 type ResponseSubmitLogin struct {
 	Id     int    `json:"id"`
 	Result bool   `json:"result"`
-	Error  string `json:"error"`
+	Error  string `json:"error,omitempty"`
 }
 
 func (resp *ResponseSubmitLogin) Parse(data []byte) error {
@@ -70,7 +70,7 @@ func (resp ResponseSubmitLogin) Build() ([]byte, error) {
 type ResponseWorkerJob struct {
 	Id      int      `json:"id"`
 	Jsonrpc string   `json:"jsonrpc"`
-	Height  int      `json:"height"`
+	Height  int      `json:"height,omitempty"`
 	Result  []string `json:"result"`
 }
 

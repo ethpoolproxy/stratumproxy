@@ -10,19 +10,19 @@ var funcMap = template.FuncMap{
 	"format_hashrate": func(hs int64) string {
 		return connection.HashrateFormat(float64(hs))
 	},
-	"format_pool_hashrate": func(pool *connection.PoolServer) string {
+	"format_pool_hashrate": func(pool connection.PoolServer) string {
 		return connection.HashrateFormat(pool.GetMHashrate() * 1000000)
 	},
-	"get_pool_worker_list": func(pool *connection.PoolServer) *[]*connection.WorkerMiner {
+	"get_pool_worker_list": func(pool connection.PoolServer) *[]*connection.WorkerMiner {
 		return pool.GetWorkerList()
 	},
-	"get_pool_online_worker_list": func(pool *connection.PoolServer) *[]*connection.WorkerMiner {
+	"get_pool_online_worker_list": func(pool connection.PoolServer) *[]*connection.WorkerMiner {
 		return pool.GetOnlineWorker()
 	},
-	"get_miner_conn": func(m *connection.WorkerMiner) *[]*connection.DownstreamClient {
-		return m.GetConn()
+	"get_miner_conn": func(m connection.WorkerMiner) *[]*connection.DownstreamClient {
+		return m.DownstreamClients.GetClients()
 	},
-	"get_miner_share_stats": func(m *connection.WorkerMiner) []int64 {
+	"get_miner_share_stats": func(m connection.WorkerMiner) []int64 {
 		stats := make([]int64, 0, 3)
 		stats = append(stats, m.TimeIntervalShareStats.GetStats(15*time.Minute).GetShare())
 		stats = append(stats, m.TimeIntervalShareStats.GetStats(30*time.Minute).GetShare())

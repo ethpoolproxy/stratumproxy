@@ -8,13 +8,13 @@ import (
 
 func pagePoolManger(ctx *context.Context) {
 	type datePoolManger struct {
-		PoolServers []*connection.PoolServer
+		PoolServers []connection.PoolServer
 	}
 
 	data := datePoolManger{}
 
 	connection.PoolServers.Range(func(_, s interface{}) bool {
-		data.PoolServers = append(data.PoolServers, s.(*connection.PoolServer))
+		data.PoolServers = append(data.PoolServers, *s.(*connection.PoolServer))
 		return true
 	})
 

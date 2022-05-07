@@ -6,6 +6,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"os"
+	"stratumproxy/util"
 	"stratumproxy/util/validator"
 	"time"
 )
@@ -14,6 +15,7 @@ import (
 var ExampleConfigFile embed.FS
 
 var ConfigFile string
+var ProtocolList = make([]string, 0, 10)
 
 // 内置证书呗
 const (
@@ -76,7 +78,7 @@ func (p *Pool) Validate() error {
 		return errors.New("矿池名 不能为空")
 	}
 
-	if p.Coin != "eth" {
+	if !util.StringSliceContain(ProtocolList, p.Coin) {
 		return errors.New("不支持的币种 [" + p.Coin + "]")
 	}
 

@@ -1,26 +1,22 @@
-package eth
+package eth_stratum
 
 import (
 	"github.com/sirupsen/logrus"
 	"stratumproxy/connection"
-	"stratumproxy/protocol/eth"
+	ethstratum "stratumproxy/protocol/eth-stratum"
 	"time"
 )
 
 // UpInjectorSendJob 只分发任务下去
 func UpInjectorSendJob(payload *connection.InjectorUpstreamPayload) {
-	var job eth.ResponseWorkerJob
+	var job ethstratum.ResponseNotify
 	err := job.Parse(payload.In)
-	if err != nil {
-		return
-	}
-	err = job.Valid()
 	if err != nil {
 		return
 	}
 
 	// 记录任务
-	payload.UpstreamClient.AddJob(job.Result[0])
+	payload.UpstreamClient.AddJob(job.Params[0].(string))
 
 	// 更新最后下发时间
 	payload.UpstreamClient.LastJobAt = time.Now()

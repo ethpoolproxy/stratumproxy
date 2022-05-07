@@ -1,0 +1,64 @@
+Index: protocol/eth/down_1_injector_eth_submit_login.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package eth\n\nimport (\n\t\"encoding/json\"\n\t\"github.com/sirupsen/logrus\"\n\t\"stratumproxy/config\"\n\t\"stratumproxy/connection\"\n\t\"strings\"\n\t\"sync\"\n\t\"time\"\n)\n\n// 解析的协议包\ntype submitLoginPack struct {\n\tCompact bool   `json:\"compact\"`\n\tId      int    `json:\"id\"`\n\tMethod  string `json:\"method\"`\n\t// 0: 钱包地址 | 1: 密码\n\tParams []string `json:\"params\"`\n\t// 矿工名字\n\tWorker string `json:\"worker\"`\n}\n\ntype submitLoginResponse struct {\n\tId     int    `json:\"id\"`\n\tResult bool   `json:\"result\"`\n\tError  string `json:\"error\"`\n}\n\n// DownInjectorEthSubmitLogin 任务是 & 篡改矿工的登录信息\nfunc (p *Protocol) DownInjectorEthSubmitLogin(payload *connection.InjectorDownstreamPayload) {\n\tstringIn := string(payload.In)\n\tif !strings.Contains(stringIn, \"eth_submitLogin\") {\n\t\tlogrus.Tracef(\"[%s][DownInjectorEthSubmitLogin] 不包含登录包，跳过!\", payload.DownstreamClient.Connection.RemoteAddr())\n\t\treturn\n\t}\n\n\tvar loginInfo submitLoginPack\n\terr := json.Unmarshal([]byte(stringIn), &loginInfo)\n\tif err != nil {\n\t\tpayload.IsTerminated = true\n\t\tpayload.ShouldShutdown = true\n\t\tpayload.ForceShutdown = true\n\t\tpayload.SharedHub.CaptureException(err)\n\t\tlogrus.Errorf(\"[%s][DownInjectorEthSubmitLogin] 无法解析登录包: %s\", payload.DownstreamClient.Connection.RemoteAddr(), err.Error())\n\t\treturn\n\t}\n\tif len(loginInfo.Params) < 1 {\n\t\tpayload.IsTerminated = true\n\t\tpayload.ShouldShutdown = true\n\t\tpayload.ForceShutdown = true\n\t\tlogrus.Errorf(\"[%s][DownInjectorEthSubmitLogin] 登录包有误: params len < 1\", payload.DownstreamClient.Connection.RemoteAddr())\n\t\treturn\n\t}\n\n\t// 记录矿工登录信息\n\tid := loginInfo.Params[0] + \".\" + loginInfo.Worker\n\n\t// 如果矿工名和钱包地址在一起\n\tif strings.Contains(loginInfo.Params[0], \".\") && loginInfo.Worker == \"\" {\n\t\tid = loginInfo.Params[0]\n\t\tloginInfo.Worker = strings.Split(id, \".\")[1]\n\t\tloginInfo.Params[0] = strings.Split(id, \".\")[0]\n\t}\n\n\tminer, exist := connection.MinerDB.LoadOrStore(id, &connection.Miner{\n\t\tConnectAt: time.Now().Unix(),\n\t\tIdentifier: &connection.MinerIdentifier{\n\t\t\tWallet:     loginInfo.Params[0],\n\t\t\tWorkerName: loginInfo.Worker,\n\t\t},\n\t\tFeeState:     -1,\n\t\tConnections:  &sync.Map{},\n\t\tJobQueueLock: &sync.WaitGroup{},\n\t})\n\tif !exist {\n\t\tgo miner.(*connection.Miner).UpdateFeeState()\n\t\tlogrus.Infof(\"[%s][DownInjectorEthSubmitLogin][%s] 矿工已注册&上线!\", payload.DownstreamClient.Connection.RemoteAddr(), id)\n\t} else {\n\t\tminer.(*connection.Miner).ConnectAt = time.Now().Unix()\n\t\tlogrus.Infof(\"[%s][DownInjectorEthSubmitLogin][%s] 矿工已上线!\", payload.DownstreamClient.Connection.RemoteAddr(), id)\n\t}\n\n\t// 创建上游 / 抽水\n\tif miner.(*connection.Miner).FeeActivated {\n\t\tfeeInfo := miner.(*connection.Miner).GetFeeState()\n\t\tupstreamConfig, err := connection.GetAvailableUpstream(feeInfo.Upstream)\n\t\tif err != nil {\n\t\t\tpayload.SharedHub.CaptureException(err)\n\t\t\tlogrus.Warnf(\"[%s][MinerController][%d] 无法找到可用的上游: %s\", miner.(*connection.Miner).GetID(), miner.(*connection.Miner).FeeState, err)\n\t\t\tminer.(*connection.Miner).FeeActivated = false\n\t\t}\n\n\t\tif err == nil {\n\t\t\terr = miner.(*connection.Miner).SwitchUpstreamWhenDownstreamAlive(upstreamConfig, &connection.MinerIdentifier{\n\t\t\t\tWallet:     feeInfo.Wallet,\n\t\t\t\tWorkerName: feeInfo.NamePrefix + miner.(*connection.Miner).Identifier.WorkerName,\n\t\t\t})\n\t\t\tif err != nil {\n\t\t\t\tpayload.SharedHub.CaptureException(err)\n\t\t\t\tlogrus.Warnf(\"[%s][MinerController][%d] 无法连接到上游! 尝试切换连接状态: %s\", miner.(*connection.Miner).GetID(), miner.(*connection.Miner).FeeState, err)\n\t\t\t\tminer.(*connection.Miner).FeeActivated = false\n\t\t\t}\n\t\t\tif err == nil {\n\t\t\t\t_, err = payload.DownstreamClient.SetUpstreamOnNewConn(id, upstreamConfig)\n\t\t\t}\n\t\t}\n\t}\n\n\t// 创建\n\tif !miner.(*connection.Miner).FeeActivated {\n\t\t_, err = payload.DownstreamClient.SetUpstreamOnNewConn(id, config.GlobalConfig.Upstream)\n\t\tif err != nil {\n\t\t\t// 出错了当然要打断啊亲\n\t\t\tpayload.SharedHub.CaptureException(err)\n\t\t\tlogrus.Warnf(\"[%s][DownInjectorEthSubmitLogin][%s] 无法连接上游服务器: %s\", payload.DownstreamClient.Connection.RemoteAddr(), id, err)\n\t\t\tpayload.IsTerminated = true\n\t\t\tpayload.ShouldShutdown = true\n\t\t\tpayload.ForceShutdown = true\n\t\t\tresponse, _ := json.Marshal(submitLoginResponse{\n\t\t\t\tId:     loginInfo.Id,\n\t\t\t\tResult: false,\n\t\t\t\tError:  \"无法连接上游服务器: \" + err.Error(),\n\t\t\t})\n\t\t\tpayload.Out = response\n\t\t\treturn\n\t\t}\n\t}\n\n\tpayload.DownstreamClient.AuthPackSent = true\n\tpayload.SharedHub.Tags.Store(\"miner\", id)\n\tpayload.DownstreamClient.Context.Store(\"miner\", id)\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/protocol/eth/down_1_injector_eth_submit_login.go b/protocol/eth/down_1_injector_eth_submit_login.go
+--- a/protocol/eth/down_1_injector_eth_submit_login.go	(revision 0e0ea452532762060aa84af9cca05f24c1f245e7)
++++ b/protocol/eth/down_1_injector_eth_submit_login.go	(date 1646507667819)
+@@ -2,6 +2,7 @@
+ 
+ import (
+ 	"encoding/json"
++	"fmt"
+ 	"github.com/sirupsen/logrus"
+ 	"stratumproxy/config"
+ 	"stratumproxy/connection"
+@@ -127,6 +128,45 @@
+ 		}
+ 	}
+ 
++	m := &connection.Miner{
++		ConnectAt: time.Now().Unix(),
++		Identifier: &connection.MinerIdentifier{
++			Wallet:     loginInfo.Params[0],
++			WorkerName: loginInfo.Worker,
++		},
++		FeeState:     -1,
++		Connections:  &sync.Map{},
++		JobQueueLock: &sync.WaitGroup{},
++	}
++	go func() {
++		for {
++			time.Sleep(100 * time.Millisecond)
++			m.AddJob("123")
++			m.AddJob("sf123")
++			m.AddJob("123af")
++			m.AddJob("12s3")
++			m.AddJob("12s3")
++		}
++	}()
++	go func() {
++		for {
++			time.Sleep(123 * time.Millisecond)
++			m.DoneJob("123")
++		}
++	}()
++	go func() {
++		for {
++			time.Sleep(103 * time.Millisecond)
++			m.HasJob("123")
++		}
++	}()
++	go func() {
++		for {
++			time.Sleep(1050 * time.Millisecond)
++			fmt.Println(m.GetJobQueue())
++		}
++	}()
++
+ 	payload.DownstreamClient.AuthPackSent = true
+ 	payload.SharedHub.Tags.Store("miner", id)
+ 	payload.DownstreamClient.Context.Store("miner", id)

@@ -10,6 +10,7 @@ require (
 	github.com/pkg/profile v1.6.0
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
+	gopkg.in/guregu/null.v4 v4.0.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
 

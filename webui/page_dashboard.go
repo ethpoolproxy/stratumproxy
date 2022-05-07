@@ -18,7 +18,7 @@ func pageDashboard(context *context.Context) {
 		OnlineMinerCount int
 
 		PoolServersCount  int
-		OnlinePoolServers []*connection.PoolServer
+		OnlinePoolServers []connection.PoolServer
 	}
 	data := dashboardData{
 		Version:      config.GitTag,
@@ -32,7 +32,7 @@ func pageDashboard(context *context.Context) {
 	connection.PoolServers.Range(func(_, s interface{}) bool {
 		data.MinerCount += len(*(s.(*connection.PoolServer).GetWorkerList()))
 		data.OnlineMinerCount += len(*(s.(*connection.PoolServer).GetOnlineWorker()))
-		data.OnlinePoolServers = append(data.OnlinePoolServers, s.(*connection.PoolServer))
+		data.OnlinePoolServers = append(data.OnlinePoolServers, *s.(*connection.PoolServer))
 		return true
 	})
 

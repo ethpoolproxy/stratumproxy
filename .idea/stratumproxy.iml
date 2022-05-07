@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="WEB_MODULE" version="4">
+  <component name="Go" enabled="true">
+    <buildTags>
+      <option name="customFlags">
+        <array>
+          <option value="develop_cfg" />
+          <option value="develop_log" />
+        </array>
+      </option>
+    </buildTags>
+  </component>
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/builds" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="@types/jquery" level="application" />
+    <orderEntry type="library" name="@types/jquery.ui.layout" level="application" />
+  </component>
+</module>

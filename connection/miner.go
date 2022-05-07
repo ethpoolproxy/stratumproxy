@@ -14,11 +14,11 @@ type DownstreamClientMutexWrapper struct {
 	clients []*DownstreamClient
 }
 
-func (d *DownstreamClientMutexWrapper) GetClients() []*DownstreamClient {
+func (d *DownstreamClientMutexWrapper) GetClients() *[]*DownstreamClient {
 	d.Lock()
 	defer d.Unlock()
 
-	return d.clients
+	return &d.clients
 }
 
 func (d *DownstreamClientMutexWrapper) Add(c *DownstreamClient) {
@@ -41,15 +41,13 @@ func (d *DownstreamClientMutexWrapper) GetIndex(c *DownstreamClient) int {
 	return -1
 }
 
-func (d *DownstreamClientMutexWrapper) Range(f func(i int, c *DownstreamClient) bool) {
+func (d *DownstreamClientMutexWrapper) Copy() *[]*DownstreamClient {
 	d.Lock()
 	defer d.Unlock()
 
-	for i, client := range d.clients {
-		if !f(i, client) {
-			return
-		}
-	}
+	result := make([]*DownstreamClient, len(d.clients))
+	copy(result, d.clients)
+	return &result
 }
 
 func (d *DownstreamClientMutexWrapper) Contains(c *DownstreamClient) bool {
@@ -81,11 +79,17 @@ type WorkerMinerSliceWrapper struct {
 	workerMiner []*WorkerMiner
 }
 
-func (wrapper *WorkerMinerSliceWrapper) Range(f func(i int, m *WorkerMiner) bool) {
+func (wrapper *WorkerMinerSliceWrapper) Copy() *[]*WorkerMiner {
 	wrapper.Lock()
 	defer wrapper.Unlock()
 
-	for i, miner := range wrapper.workerMiner {
+	result := make([]*WorkerMiner, len(wrapper.workerMiner))
+	copy(result, wrapper.workerMiner)
+	return &result
+}
+
+func (wrapper *WorkerMinerSliceWrapper) CopyRange(f func(i int, m *WorkerMiner) bool) {
+	for i, miner := range *wrapper.Copy() {
 		if !f(i, miner) {
 			return
 		}
@@ -194,16 +198,8 @@ type WorkerMiner struct {
 	DownstreamClients *DownstreamClientMutexWrapper
 }
 
-func (m *WorkerMiner) GetConn() *[]*DownstreamClient {
-	result := make([]*DownstreamClient, 0)
-	for _, client := range m.DownstreamClients.GetClients() {
-		result = append(result, client)
-	}
-	return &result
-}
-
 func (m *WorkerMiner) IsOnline() bool {
-	return len(m.DownstreamClients.GetClients()) > 0
+	return len(*m.DownstreamClients.GetClients()) > 0
 }
 
 func (m *WorkerMiner) AddShare(d int64) {

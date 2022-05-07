@@ -19,6 +19,8 @@ func GetProtocol(name string) *Protocol {
 type ProtocolHandler interface {
 	HandleDownstreamDisconnect(client *DownstreamClient)
 	HandleFeeControl(pool *PoolServer)
+	InitialUpstreamConn(upstream *UpstreamClient) error
+	InitialUpstreamAuth(upstream *UpstreamClient, identifier MinerIdentifier) error
 }
 
 type ProtocolInjector struct {

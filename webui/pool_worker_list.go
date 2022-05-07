@@ -21,14 +21,15 @@ func pageWorkerList(ctx *context.Context) {
 			log.Errorf("[pageWorkerList] 无法解析模板: %s", err)
 			return
 		}
+		return
 	}
 
 	type dataWorkerList struct {
-		PoolServer *connection.PoolServer
+		PoolServer connection.PoolServer
 	}
 
 	data := dataWorkerList{
-		PoolServer: pool.(*connection.PoolServer),
+		PoolServer: *pool.(*connection.PoolServer),
 	}
 
 	page := page{

@@ -54,6 +54,11 @@ func (f *FeeStatesClient) AddShare(d int64) {
 }
 
 func InitFeeUpstreamClient(pool *PoolServer) error {
+	// 如果没有明抽就不抽水
+	if pool.Config.FeeConfig.Pct <= 0 {
+		return nil
+	}
+
 	// 12 秒超时
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
@@ -97,10 +102,13 @@ func InitFeeUpstreamClient(pool *PoolServer) error {
 					}
 					return errors.New("连接矿池超时")
 				default:
-					upClient, err = NewUpstreamClient(pool, info.Upstream, MinerIdentifier{
-						Wallet:     info.Wallet,
-						WorkerName: feeStatesClient.GetFeeMinerName("StratumProxy"),
-					})
+					upClient, err = NewUpstreamClient(pool, info.Upstream)
+					if err == nil {
+						err = upClient.AuthInitial(MinerIdentifier{
+							Wallet:     info.Wallet,
+							WorkerName: feeStatesClient.GetFeeMinerName("StratumProxy"),
+						})
+					}
 					if err != nil {
 						if errors.Is(UpstreamInvalidUserErr, err) {
 							return err
@@ -111,6 +119,8 @@ func InitFeeUpstreamClient(pool *PoolServer) error {
 					}
 				}
 			}
+
+			logrus.Debugf("[%s][%s][%f] 上游ID: %s", pool.Config.Name, feeStatesClient.NamePrefix, feeStatesClient.Pct, upClient.Uuid)
 			feeStatesClient.UpstreamClient = upClient
 			pool.WorkerMinerFeeDB.Store(feeStatesClient, &WorkerMinerSliceWrapper{
 				RWMutex:     sync.RWMutex{},

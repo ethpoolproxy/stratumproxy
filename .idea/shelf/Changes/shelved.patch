@@ -1,0 +1,95 @@
+Index: connection/downstream_injector.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package connection\n\nimport (\n\t\"github.com/sirupsen/logrus\"\n)\n\nvar DownstreamInjector = &InjectorDownstream{}\n\ntype InjectorDownstream struct {\n\t// 处理器\n\tprocessors []func(c *InjectorDownstreamPayload)\n}\n\n// InjectorDownstreamPayload 这个东西里面装着要传递的东西，仅限单个数据包的链式处理\ntype InjectorDownstreamPayload struct {\n\t// 连接\n\tDownstreamClient *DownstreamClient\n\n\t// 跟 bukkit 那个 isCancelled 同理\n\t// 当某个 Processor 设置了返回值的时候结束后续处理\n\tIsTerminated bool\n\n\t// 要断开下游吗\n\tShouldShutdown bool\n\tForceShutdown  bool\n\n\t// 最后返回的数据 可为空\n\tTransmission []byte\n\n\t// 在各个 Processor 中传递的数据\n\t// 会被用作最终发送到上游的数据\n\tIn []byte\n\n\t// 返回的数据\n\tOut []byte\n}\n\nfunc (injector *InjectorDownstream) RegisterProcessor(processor func(c *InjectorDownstreamPayload)) {\n\tinjector.processors = append(injector.processors, processor)\n}\n\n// processMsg 链式地处理消息\nfunc (injector *InjectorDownstream) processMsg(client *DownstreamClient, in []byte) {\n\tpayload := &InjectorDownstreamPayload{\n\t\tIn:               in,\n\t\tDownstreamClient: client,\n\t}\n\n\tfor _, p := range injector.processors {\n\t\tp(payload)\n\t\t// 如果这次的处理结果设置了终止标志，则终止后续处理\n\t\tif payload.IsTerminated {\n\t\t\tif len(payload.Out) > 0 {\n\t\t\t\t// 就把这些东西设定成当前的,因为当前要求终止\n\t\t\t\t_, err := client.Connection.Write(payload.Out)\n\t\t\t\tif err != nil {\n\t\t\t\t\tlogrus.Errorf(\"[%s][ProcessMsg] 在终止时发送数据失败 [%s]\", client.Connection.RemoteAddr().String(), err.Error())\n\t\t\t\t}\n\t\t\t}\n\t\t\tif payload.ShouldShutdown {\n\t\t\t\tif payload.ForceShutdown {\n\t\t\t\t\tclient.ForceShutdown()\n\t\t\t\t} else {\n\t\t\t\t\tclient.Shutdown()\n\t\t\t\t}\n\t\t\t}\n\t\t\treturn\n\t\t}\n\t}\n\n\treturn\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/connection/downstream_injector.go b/connection/downstream_injector.go
+--- a/connection/downstream_injector.go	(revision 39fd93fa33d2e195f34b9948d7e96e9954e3578d)
++++ b/connection/downstream_injector.go	(date 1645675007294)
+@@ -47,7 +47,9 @@
+ 	}
+ 
+ 	for _, p := range injector.processors {
++		client.TickWaiter.Add(1)
+ 		p(payload)
++		client.TickWaiter.Done()
+ 		// 如果这次的处理结果设置了终止标志，则终止后续处理
+ 		if payload.IsTerminated {
+ 			if len(payload.Out) > 0 {
+Index: connection/downstream.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package connection\n\nimport (\n\t\"bufio\"\n\t\"encoding/json\"\n\t\"fmt\"\n\tlog \"github.com/sirupsen/logrus\"\n\t\"io\"\n\t\"net\"\n\t\"stratumproxy/config\"\n\t\"strings\"\n\t\"sync\"\n)\n\ntype DownstreamClient struct {\n\tConnection          net.Conn\n\tUpstreamForwardLock bool\n\tAuthed              bool\n\tProcessLock         *sync.WaitGroup\n}\n\nfunc (client *DownstreamClient) processRead() {\n\treader := bufio.NewReader(client.Connection)\n\tvar err error\n\tfor {\n\t\tvar data []byte\n\t\tdata, err = reader.ReadSlice('\\n')\n\t\tif err != nil {\n\t\t\tif err == io.EOF || strings.Contains(err.Error(), \"use of closed network connection\") {\n\t\t\t\tlog.Debugf(\"[%s][processRead] 下游断开连接!\", client.Connection.RemoteAddr())\n\t\t\t\tbreak\n\t\t\t} else {\n\t\t\t\tlog.Errorf(\"[%s][processRead] 读取下游数据失败: %s\", client.Connection.RemoteAddr(), err.Error())\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\t// 别有事没事瞎叫唤\n\t\tif len(data) > 0 {\n\t\t\t// 验证是不是 json\n\t\t\tif !json.Valid(data) {\n\t\t\t\tlog.Debugf(\"[%s][DownInjectorEthSubmitLogin] $马玩意能不能不要扫 | Raw: %s\", client.Connection.RemoteAddr(), data)\n\t\t\t\t_, _ = client.Connection.Write([]byte(\"NM$L 伪造你妈\"))\n\t\t\t\tclient.ForceShutdown()\n\t\t\t\t// 注意这里是 return\n\t\t\t\treturn\n\t\t\t}\n\n\t\t\tlog.Tracef(\"[%s][processRead] 接收到下游数据: %s\", client.Connection.RemoteAddr(), data)\n\n\t\t\t// 或许以后直接改成丢弃请求的也好?\n\t\t\tlog.Tracef(\"[%s][processRead] 等待锁!\", client.Connection.RemoteAddr())\n\t\t\tclient.ProcessLock.Wait()\n\t\t\tlog.Tracef(\"[%s][processRead] 结束等待!\", client.Connection.RemoteAddr())\n\t\t\tDownstreamInjector.processMsg(client, data)\n\t\t}\n\t}\n\tclient.Authed = false\n\tclient.Shutdown()\n}\n\nfunc (client *DownstreamClient) Shutdown() {\n\terr := client.Connection.Close()\n\n\tminer := FindMinerByDownstream(client)\n\tif miner == nil {\n\t\t// 之前已经关掉的而且找不到 Miner 多半是前面被检测到伪造关掉的\n\t\tif err != nil && strings.Contains(err.Error(), \"use of closed network connection\") {\n\t\t\treturn\n\t\t}\n\n\t\t//log.Warnf(\"[%s][Shutdown] 无法找到 Miner\", client.Connection.RemoteAddr())\n\t\treturn\n\t}\n\n\tupstream, ok := miner.Connections.LoadAndDelete(client)\n\tif !ok {\n\t\tlog.Debugf(\"[%s][Shutdown] 无需删除上游\", client.Connection.RemoteAddr())\n\t\treturn\n\t}\n\tupstream.(*UpstreamClient).Shutdown()\n}\n\nfunc (client *DownstreamClient) ForceShutdown() {\n\t_ = client.Connection.Close()\n}\n\nfunc (client *DownstreamClient) SetUpstreamWhenDownstreamAlive(upstream config.Upstream) (*UpstreamClient, error) {\n\tminer := FindMinerByDownstream(client)\n\tif miner == nil {\n\t\treturn nil, fmt.Errorf(\"无法找到 Miner\")\n\t}\n\n\tclient.ProcessLock.Add(1)\n\tdefer client.ProcessLock.Done()\n\toldUpstreamClient, ok := miner.Connections.LoadAndDelete(client)\n\tif ok {\n\t\toldUpstreamClient.(*UpstreamClient).Shutdown()\n\t}\n\n\tupstreamClient, err := NewUpstreamClient(upstream)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tclient.UpstreamForwardLock = true\n\tminer.Connections.Store(client, upstreamClient)\n\tclient.UpstreamForwardLock = false\n\treturn upstreamClient, nil\n}\n\nfunc (client *DownstreamClient) SetUpstreamOnNewConn(id string, upstream config.Upstream) (*UpstreamClient, error) {\n\tminerObj, ok := MinerDB.Load(id)\n\tif !ok {\n\t\treturn nil, fmt.Errorf(\"无法找到 Miner\")\n\t}\n\tminer := minerObj.(*Miner)\n\n\tupstreamClient, err := NewUpstreamClient(upstream)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tclient.UpstreamForwardLock = true\n\tminer.Connections.Store(client, upstreamClient)\n\tclient.UpstreamForwardLock = false\n\treturn upstreamClient, nil\n}\n\nfunc NewDownstreamClient(c net.Conn) *DownstreamClient {\n\tinstance := &DownstreamClient{\n\t\tConnection:  c,\n\t\tProcessLock: &sync.WaitGroup{},\n\t}\n\n\tgo instance.processRead()\n\treturn instance\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/connection/downstream.go b/connection/downstream.go
+--- a/connection/downstream.go	(revision 39fd93fa33d2e195f34b9948d7e96e9954e3578d)
++++ b/connection/downstream.go	(date 1645682884239)
+@@ -16,7 +16,8 @@
+ 	Connection          net.Conn
+ 	UpstreamForwardLock bool
+ 	Authed              bool
+-	ProcessLock         *sync.WaitGroup
++	ProcessLock         bool
++	TickWaiter          *sync.WaitGroup
+ }
+ 
+ func (client *DownstreamClient) processRead() {
+@@ -48,9 +49,10 @@
+ 			log.Tracef("[%s][processRead] 接收到下游数据: %s", client.Connection.RemoteAddr(), data)
+ 
+ 			// 或许以后直接改成丢弃请求的也好?
+-			log.Tracef("[%s][processRead] 等待锁!", client.Connection.RemoteAddr())
+-			client.ProcessLock.Wait()
+-			log.Tracef("[%s][processRead] 结束等待!", client.Connection.RemoteAddr())
++			if client.ProcessLock {
++				log.Debugf("[%s][processRead] 丢弃下游数据: %s", client.Connection.RemoteAddr(), data)
++				continue
++			}
+ 			DownstreamInjector.processMsg(client, data)
+ 		}
+ 	}
+@@ -90,8 +92,8 @@
+ 		return nil, fmt.Errorf("无法找到 Miner")
+ 	}
+ 
+-	client.ProcessLock.Add(1)
+-	defer client.ProcessLock.Done()
++	client.ProcessLock = true
++	defer func() { client.ProcessLock = false }()
+ 	oldUpstreamClient, ok := miner.Connections.LoadAndDelete(client)
+ 	if ok {
+ 		oldUpstreamClient.(*UpstreamClient).Shutdown()
+@@ -129,7 +131,8 @@
+ func NewDownstreamClient(c net.Conn) *DownstreamClient {
+ 	instance := &DownstreamClient{
+ 		Connection:  c,
+-		ProcessLock: &sync.WaitGroup{},
++		ProcessLock: false,
++		TickWaiter:  &sync.WaitGroup{},
+ 	}
+ 
+ 	go instance.processRead()
+Index: connection/miner.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package connection\n\nimport (\n\t\"stratumproxy/config\"\n\t\"sync\"\n)\n\n// MinerDB map[string]*Miner\nvar MinerDB = &sync.Map{}\n\ntype Miner struct {\n\t// 最后一次连接时间\n\tConnectAt int64\n\t// 最后一次提交时间\n\tLastShareAt int64\n\n\tIdentifier *MinerIdentifier\n\n\t// 抽水状态\n\t// -1 为不抽水 | 从 0 开始到 len(fee) - 1\n\tFeeState int\n\n\t// 是否正在抽水\n\tFeeActivated bool\n\n\tHashRate int64\n\tShare    int64\n\n\t// 底下的连接对\n\tConnections *sync.Map\n}\n\ntype MinerIdentifier struct {\n\tWallet     string\n\tWorkerName string\n}\n\nfunc (m *Miner) GetID() string {\n\treturn m.Identifier.Wallet + \".\" + m.Identifier.WorkerName\n}\n\nfunc (m *Miner) GetFeeState() config.FeeState {\n\treturn config.FeeStates[m.FeeState]\n}\n\nfunc (m *Miner) GetCurrentConnCount() int {\n\tresult := 0\n\tm.Connections.Range(func(key, value interface{}) bool {\n\t\tresult++\n\t\treturn true\n\t})\n\treturn result\n}\n\nfunc (m *Miner) Shutdown() {\n\tm.Connections.Range(func(downK, upV interface{}) bool {\n\t\tdownK.(*DownstreamClient).Shutdown()\n\t\treturn true\n\t})\n}\n\nfunc (m *Miner) SwitchUpstreamWhenDownstreamAlive(upstream config.Upstream, identifier *MinerIdentifier) error {\n\tid := identifier\n\tif id == nil {\n\t\tid = m.Identifier\n\t}\n\n\tvar errFinal error\n\tm.Connections.Range(func(downK, upV interface{}) bool {\n\t\tdownK.(*DownstreamClient).ProcessLock.Add(1)\n\t\tdefer downK.(*DownstreamClient).ProcessLock.Done()\n\n\t\tclient, err := downK.(*DownstreamClient).SetUpstreamWhenDownstreamAlive(upstream)\n\t\tif err != nil {\n\t\t\terrFinal = err\n\t\t\treturn false\n\t\t}\n\n\t\terr = client.SendAuth(id.Wallet, id.WorkerName)\n\t\tif err != nil {\n\t\t\terrFinal = err\n\t\t\treturn false\n\t\t}\n\n\t\terr = client.RequestJob()\n\t\tif err != nil {\n\t\t\terrFinal = err\n\t\t\treturn false\n\t\t}\n\n\t\treturn true\n\t})\n\n\treturn errFinal\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/connection/miner.go b/connection/miner.go
+--- a/connection/miner.go	(revision 39fd93fa33d2e195f34b9948d7e96e9954e3578d)
++++ b/connection/miner.go	(date 1645674850312)
+@@ -67,9 +67,6 @@
+ 
+ 	var errFinal error
+ 	m.Connections.Range(func(downK, upV interface{}) bool {
+-		downK.(*DownstreamClient).ProcessLock.Add(1)
+-		defer downK.(*DownstreamClient).ProcessLock.Done()
+-
+ 		client, err := downK.(*DownstreamClient).SetUpstreamWhenDownstreamAlive(upstream)
+ 		if err != nil {
+ 			errFinal = err

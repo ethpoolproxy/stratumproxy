@@ -10,6 +10,7 @@ import (
 	"stratumproxy/config"
 	"stratumproxy/connection"
 	"stratumproxy/injector/eth"
+	"stratumproxy/injector/eth-stratum"
 	"stratumproxy/util"
 	"stratumproxy/webui"
 	"syscall"
@@ -67,6 +68,7 @@ func main() {
 
 	// 加载协议
 	eth.RegisterProtocol()
+	eth_stratum.RegisterProtocol()
 
 	// 启动矿池
 	for _, pool := range config.GlobalConfig.Pools {

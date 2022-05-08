@@ -233,6 +233,18 @@ func (client *UpstreamClient) Reconnect() {
 			time.Sleep(2 * time.Second)
 			continue
 		}
+
+		if client.DownstreamIdentifier.Wallet != "" {
+			err = client.AuthInitial(client.DownstreamIdentifier)
+			if err != nil {
+				log.Warnf("[Reconnect] 无法登录上游矿池: %s", err)
+				time.Sleep(2 * time.Second)
+				continue
+			}
+		} else {
+			log.Warnf("[Reconnect] 上游不存在认证信息，取消重连!")
+			return
+		}
 	}
 
 	if client.terminated || (client.DownstreamClient != nil && client.DownstreamClient.Disconnected) {

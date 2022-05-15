@@ -1,0 +1,22 @@
+{{ define "header" }}
+    <title>StratumProxy |{{ template "title"}}</title>
+{{ end }}
+
+{{ define "body" }}
+    <div class="content-wrapper">
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0">{{ template "section_title" . }}</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="content">
+            {{ template "section" . }}
+        </section>
+    </div>
+
+{{ end }}

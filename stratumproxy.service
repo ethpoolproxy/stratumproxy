@@ -1,0 +1,17 @@
+[Unit]
+Description=StratumProxy Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Restart=on-failure
+RestartSec=2s
+ExecStart=/usr/bin/stratumproxy -config /etc/stratumproxy/config.yml
+ExecStop=/bin/kill -TERM $MAINPID
+WorkingDirectory=/etc/stratumproxy
+LimitNOFILE=102400
+
+[Install]
+WantedBy=multi-user.target

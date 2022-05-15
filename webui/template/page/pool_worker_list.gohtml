@@ -1,0 +1,99 @@
+{{ define "title" }} 矿机列表 - {{ .PoolServer.Config.Name }} {{ end }}
+
+{{ define "header_page" }}
+    <link rel="stylesheet" href="/assets/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="/assets/plugins/datatables-buttons/css/buttons.bootstrap4.min.css">
+    <link rel="stylesheet" href="/assets/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
+{{ end }}
+
+{{ define "section_title" }} 矿机列表 | {{ .PoolServer.Config.Name }} {{ end }}
+
+{{ define "section" }}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <table class="table" id="miner-table">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th><i class="fa-solid fa-wallet"></i>&nbsp;钱包</th>
+                        <th><i class="fa-solid fa-helmet-safety"></i>&nbsp;矿机名</th>
+                        <th><ion-icon name="link-outline"></ion-icon>&nbsp;连接数</th>
+                        <th><i class="fa-solid fa-plug-circle-bolt"></i>&nbsp;算力</th>
+                        <th><i class="fa-solid fa-check"></i>&nbsp;份额 [15/30/60分钟/总] </th>
+                        <th><i class="fa-solid fa-clock"></i>&nbsp;最近提交时间</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {{ range $i, $miner := get_pool_worker_list .PoolServer }}
+                        <tr>
+                            <td>{{ add $i 1 }}</td>
+                            <td>{{ $miner.Identifier.Wallet }}</td>
+                            <td>{{ $miner.Identifier.WorkerName }}</td>
+                            {{ $activeConn := len (get_miner_conn $miner) }}
+                            {{ if eq $activeConn 0 }}
+                                <td style="color: #ff1533;">{{ $activeConn }} (离线)</td>
+                            {{ else }}
+                                <td style="color: #388E3C;">{{ $activeConn }} (在线)</td>
+                            {{ end }}
+                            <td>{{ format_hashrate $miner.HashRate }}</td>
+                            {{ $shareStats := get_miner_share_stats $miner }}
+                            <td>{{ index $shareStats 0 }} | {{ index $shareStats 1 }} | {{ index $shareStats 2 }} | {{ $miner.TotalShare }}</td>
+                            <td>{{ unix_time $miner.LastShareAt }}</td>
+                        </tr>
+                    {{- end }}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{{ end }}
+
+{{ define "script_section" }}
+    <script src="/assets/plugins/datatables/jquery.dataTables.min.js"></script>
+    <script src="/assets/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
+    <script src="/assets/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
+    <script src="/assets/plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
+    <script src="/assets/plugins/datatables-buttons/js/dataTables.buttons.min.js"></script>
+    <script src="/assets/plugins/datatables-buttons/js/buttons.bootstrap4.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            $('#miner-table').DataTable({
+                'paging'      : true,
+                'lengthChange': true,
+                'searching'   : true,
+                'ordering'    : true,
+                'info'        : true,
+                'autoWidth'   : true,
+                "order": [[ 1, "asc" ]],
+                "pageLength": 200,
+                "lengthMenu": [ 10, 50, 100, 200, 500 ],
+
+                language: {
+                    "sProcessing": "处理中...",
+                    "sLengthMenu": "显示 _MENU_ 项结果",
+                    "sZeroRecords": "没有匹配结果",
+                    "sInfo": "显示第 _START_ 至 _END_ 项结果，共 _TOTAL_ 项",
+                    "sInfoEmpty": "显示第 0 至 0 项结果，共 0 项",
+                    "sInfoFiltered": "(由 _MAX_ 项结果过滤)",
+                    "sInfoPostFix": "",
+                    "sSearch": "搜索:",
+                    "sUrl": "",
+                    "sEmptyTable": "表中数据为空",
+                    "sLoadingRecords": "载入中...",
+                    "sInfoThousands": ",",
+                    "oPaginate": {
+                        "sFirst": "首页",
+                        "sPrevious": "上页",
+                        "sNext": "下页",
+                        "sLast": "末页"
+                    },
+                    "oAria": {
+                        "sSortAscending": ": 以升序排列此列",
+                        "sSortDescending": ": 以降序排列此列"
+                    }
+                }
+            });
+        });
+    </script>
+{{ end }}

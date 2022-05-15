@@ -1,0 +1,8 @@
+pools: []
+
+# WebUI 设置
+webui:
+  bind: "0.0.0.0:8444"
+  auth:
+    username: ""
+    passwd: ""

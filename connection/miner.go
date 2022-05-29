@@ -2,7 +2,6 @@ package connection
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -12,13 +11,6 @@ import (
 type DownstreamClientMutexWrapper struct {
 	sync.RWMutex
 	clients []*DownstreamClient
-}
-
-func (d *DownstreamClientMutexWrapper) GetClients() *[]*DownstreamClient {
-	d.Lock()
-	defer d.Unlock()
-
-	return &d.clients
 }
 
 func (d *DownstreamClientMutexWrapper) Add(c *DownstreamClient) {
@@ -140,9 +132,6 @@ func (wrapper *WorkerMinerSliceWrapper) Remove(m *WorkerMiner) {
 type WalletMiner struct {
 	Wallet string
 
-	TotalShare    int64
-	TotalFeeShare int64
-
 	// Clients map[workerName]*WorkerMiner
 	Clients *sync.Map
 }
@@ -179,18 +168,12 @@ type WorkerMiner struct {
 
 	HashRate   int64
 	TotalShare int64
+	FeeShare   int64
 
 	TimeIntervalShareStats *ShareStatsIntervalMap
 
-	// 最后一次开始抽水时份额提交了多少
-	LastFeeAtShare int64
-
-	// map[*FeeStatesClient]int64
-	FeeShareIndividual *sync.Map
-	LastFeeTime        time.Time
-
-	// 总共抽水份额里面的分时统计
-	TimeIntervalFeeShareStats *ShareStatsIntervalMap
+	FeeInstance    []*FeeStatesClient
+	CurFeeInstance *FeeStatesClient
 
 	DropUpstream bool
 
@@ -199,29 +182,17 @@ type WorkerMiner struct {
 }
 
 func (m *WorkerMiner) IsOnline() bool {
-	return len(*m.DownstreamClients.GetClients()) > 0
+	return len(*m.DownstreamClients.Copy()) > 0
 }
 
 func (m *WorkerMiner) AddShare(d int64) {
 	atomic.AddInt64(&m.TotalShare, d)
 	m.TimeIntervalShareStats.AddShare(d)
 	m.LastShareAt = time.Now()
-
-	walletMiner, ok := m.PoolServer.WalletMinerDB.Load(m.Identifier.Wallet)
-	if !ok {
-		return
-	}
-	atomic.AddInt64(&walletMiner.(*WalletMiner).TotalShare, d)
 }
 
 func (m *WorkerMiner) AddFeeShare(d int64) {
-	m.TimeIntervalFeeShareStats.AddShare(d)
-
-	walletMiner, ok := m.PoolServer.WalletMinerDB.Load(m.Identifier.Wallet)
-	if !ok {
-		return
-	}
-	atomic.AddInt64(&walletMiner.(*WalletMiner).TotalFeeShare, d)
+	atomic.AddInt64(&m.FeeShare, d)
 }
 
 // GetHashrateInMhs Hash/s -> MH/s
@@ -237,79 +208,17 @@ func (m *WorkerMiner) GetID() string {
 	return m.Identifier.Wallet + "." + m.Identifier.WorkerName
 }
 
-type MinerScore struct {
-	ScoreWallet   float64
-	Score30Min    float64
-	Score15Min    float64
-	LastFeeTime   float64
-	HashrateLevel float64
-	FinalScore    float64
-}
+func (m *WorkerMiner) FindFeeInfoByFeeUpstream(upC *UpstreamClient) *FeeStatesClient {
+	var result *FeeStatesClient
 
-// CalcScore 计算分数
-// 用来评估机器的抽水分数 优先抽分数高的
-func (m *WorkerMiner) CalcScore() MinerScore {
-	interval30MinShare := float64(m.TimeIntervalShareStats.GetStats(30 * time.Minute).GetShare())
-	interval30MinFeeShare := float64(m.TimeIntervalFeeShareStats.GetStats(30 * time.Minute).GetShare())
-	interval15MinShare := float64(m.TimeIntervalShareStats.GetStats(15 * time.Minute).GetShare())
-	interval15MinFeeShare := float64(m.TimeIntervalFeeShareStats.GetStats(15 * time.Minute).GetShare())
-
-	// 1 - 抽水 / (转发份额 * 惩罚 + 抽水)
-	// P = 惩罚 | P < 1
-	// S = 24 小时内提交的份额
-	// f(x) | x = 24 小时内抽水的份额
-	// f\left(x\right)\ =1\ -\ \frac{x}{P\cdot S+\ x}
-	score30Min := 1 - (interval30MinFeeShare / ((0.025 * interval30MinShare) + interval30MinFeeShare))
-
-	// 抽水比例/15 分钟内
-	score15Min := 1 - (interval15MinFeeShare / ((0.025 * interval15MinShare) + interval15MinFeeShare))
-
-	// 钱包分数
-	walletMinerObj, ok := m.PoolServer.WalletMinerDB.Load(m.Identifier.Wallet)
-	scoreWallet := 0.0
-	if ok {
-		walletMiner := walletMinerObj.(*WalletMiner)
-		scoreWallet = 1 - (float64(walletMiner.TotalFeeShare) / ((0.02 * float64(walletMiner.TotalShare)) + float64(walletMiner.TotalFeeShare)))
+	for _, fee := range m.FeeInstance {
+		if fee.UpstreamClient == upC {
+			result = fee
+			break
+		}
 	}
 
-	// 离上次抽水的时间 | 越大越好
-	lastFeeTime := time.Since(m.LastFeeTime).Minutes() / 15
-	// 如果之前没有提交就使用连上的时间 + 7 min
-	if m.LastFeeTime.Unix() == 0 {
-		lastFeeTime = time.Since(m.ConnectAt.Add(2*time.Minute)).Minutes() / 15
-	}
-	if lastFeeTime > 1 {
-		lastFeeTime = 1
-	}
-	if lastFeeTime < 0 {
-		lastFeeTime = 0
-	}
-
-	// 算力等级
-	hashrateLevelMax := 800.0
-	hashrateLevel := m.GetHashrateInMhs() / hashrateLevelMax
-	if hashrateLevel > 1 {
-		hashrateLevel = 1
-	}
-
-	finalScore := score30Min*0.2 + score15Min*0.1 + hashrateLevel*0.08 + lastFeeTime*0.17 + scoreWallet*0.45
-	if math.IsNaN(finalScore) {
-		finalScore = 0.0
-	}
-
-	// 矿机掉线设置分数为 0
-	if m.GetHashrateInMhs() == 0 {
-		finalScore = 0.0
-	}
-
-	return MinerScore{
-		Score30Min:    score30Min,
-		Score15Min:    score15Min,
-		LastFeeTime:   lastFeeTime,
-		ScoreWallet:   scoreWallet,
-		HashrateLevel: hashrateLevel,
-		FinalScore:    finalScore,
-	}
+	return result
 }
 
 type ShareStatsIntervalMap struct {

@@ -32,6 +32,7 @@ type UpstreamClient struct {
 	// ProtocolData 记录协议的一些数据
 	ProtocolData *sync.Map
 
+	WorkerMiner          *WorkerMiner
 	DownstreamClient     *DownstreamClient
 	DownstreamIdentifier MinerIdentifier
 
@@ -104,34 +105,6 @@ func (client *UpstreamClient) ReadOnce(timeout int) ([]byte, error) {
 		return []byte(""), err
 	}
 	return client.reader.ReadBytes('\n')
-}
-
-func (client *UpstreamClient) SafeWrite(in []byte) {
-	start := time.Now()
-
-	err := errors.New("first run")
-	for err != nil {
-		if client.Disconnected {
-			time.Sleep(1 * time.Millisecond)
-			continue
-		}
-		if client.terminate {
-			return
-		}
-
-		err = client.Write(in)
-		if err == nil {
-			return
-		}
-
-		if time.Since(start).Seconds() > 10 {
-			log.Debugf("[%s][%s][SafeWrite] 发送超时，放弃数据包: %s", client.PoolServer.Config.Name, client.Uuid, string(in))
-			return
-		}
-
-		log.Warnf("[%s][%s][SafeWrite] 无法发送数据包: %s", client.PoolServer.Config.Name, client.Uuid, err)
-		time.Sleep(500 * time.Millisecond)
-	}
 }
 
 func (client *UpstreamClient) Write(in []byte) error {

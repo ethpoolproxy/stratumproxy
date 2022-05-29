@@ -26,8 +26,8 @@ type ProtocolHandler struct {
 	connection.ProtocolHandler
 }
 
-func (p *ProtocolHandler) HandleFeeControl(pool *connection.PoolServer) {
-	ethcommon.EthFeeController(pool)
+func (p *ProtocolHandler) HandleFeeControl(miner *connection.WorkerMiner) {
+	ethcommon.EthFeeController(miner)
 }
 
 func (p *ProtocolHandler) HandleDownstreamDisconnect(_ *connection.DownstreamClient) {

@@ -163,14 +163,14 @@
                             <tr>
                                 <td><i class="fa-solid fa-water"></i> 明抽份额</td>
                                 {{ if f_greater $server.Config.FeeConfig.Pct 0.0 }}
-                                    {{ if eq (len $server.FeeInstance) 0 }}
+                                    {{ if eq $server.UserFeeShare 0 }}
                                         <td>0% / 0</td>
                                     {{ else }}
                                         {{ $safeDiv := $server.GlobalShareStats }}
                                         {{ if eq $safeDiv 0 }}
                                             {{ $safeDiv = add1 $safeDiv }}
                                         {{ end }}
-                                        <td>{{ round (divf (index $server.FeeInstance 0).Share $safeDiv | mulf 100) 3 }}% / {{ (index $server.FeeInstance 0).Share }}</td>
+                                        <td>{{ round (divf $server.UserFeeShare $safeDiv | mulf 100) 3 }}% / {{ $server.UserFeeShare }}</td>
                                     {{ end }}
                                 {{ else }}
                                     <td>0% / 0</td>

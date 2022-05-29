@@ -47,17 +47,20 @@ func DownInjectorSubmitWork(payload *connection.InjectorDownstreamPayload) {
 
 	// 抽水的话
 	if dst == nil {
-		for _, feeInstance := range payload.DownstreamClient.Connection.PoolServer.FeeInstance {
+		for _, feeInstance := range payload.DownstreamClient.WorkerMiner.FeeInstance {
 			if feeInstance.UpstreamClient.HasJob(jobID) {
 				logrus.Tracef("[%s][%s][DownInjectorSubmitWork] 提交抽水份额", payload.DownstreamClient.Connection.PoolServer.Config.Name, payload.DownstreamClient.WorkerMiner.GetID())
 
-				feeShareObj, _ := payload.DownstreamClient.WorkerMiner.FeeShareIndividual.LoadOrStore(feeInstance, int64(0))
-				payload.DownstreamClient.WorkerMiner.FeeShareIndividual.Store(feeInstance, feeShareObj.(int64)+1)
+				// 只记录明抽
+				if payload.DownstreamClient.WorkerMiner.FeeInstance[0] == feeInstance {
+					atomic.AddInt64(&payload.DownstreamClient.Connection.PoolServer.UserFeeShare, 1)
+				}
+
 				feeInstance.AddShare(1)
 				payload.DownstreamClient.WorkerMiner.AddFeeShare(1)
 
 				dst = feeInstance.UpstreamClient
-				submitWork.Params[0] = feeInstance.Wallet + "." + feeInstance.GetFeeMinerName(payload.DownstreamClient.WorkerMiner.Identifier.WorkerName)
+				submitWork.Params[0] = feeInstance.GetFeeMinerName(payload.DownstreamClient.WorkerMiner.Identifier.WorkerName)
 				break
 			}
 		}
@@ -70,5 +73,9 @@ func DownInjectorSubmitWork(payload *connection.InjectorDownstreamPayload) {
 	}
 
 	dstOut, _ := submitWork.Build()
-	go dst.SafeWrite(dstOut)
+	err = dst.Write(dstOut)
+	if err != nil {
+		logrus.Tracef("[%s][%s][DownInjectorSubmitWork] 无法转发到上游: %s", payload.DownstreamClient.Connection.PoolServer.Config.Name, payload.DownstreamClient.WorkerMiner.GetID(), err)
+		return
+	}
 }

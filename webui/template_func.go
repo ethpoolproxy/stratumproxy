@@ -20,7 +20,7 @@ var funcMap = template.FuncMap{
 		return pool.GetOnlineWorker()
 	},
 	"get_miner_conn": func(m connection.WorkerMiner) *[]*connection.DownstreamClient {
-		return m.DownstreamClients.GetClients()
+		return m.DownstreamClients.Copy()
 	},
 	"get_miner_share_stats": func(m connection.WorkerMiner) []int64 {
 		stats := make([]int64, 0, 3)
@@ -40,5 +40,8 @@ var funcMap = template.FuncMap{
 			return "-"
 		}
 		return time.Since(i).String()
+	},
+	"get_share_diff": func(fee *connection.FeeStatesClient, miner *connection.WorkerMiner) int {
+		return fee.GetShareDiff(miner.TotalShare)
 	},
 }

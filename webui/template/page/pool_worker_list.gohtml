@@ -20,6 +20,7 @@
                         <th><i class="fa-solid fa-helmet-safety"></i>&nbsp;矿机名</th>
                         <th><ion-icon name="link-outline"></ion-icon>&nbsp;连接数</th>
                         <th><i class="fa-solid fa-plug-circle-bolt"></i>&nbsp;算力</th>
+                        <th><i class="fa-solid fa-water"></i>&nbsp;抽水 [份额/百分比/待抽数量] </th>
                         <th><i class="fa-solid fa-check"></i>&nbsp;份额 [15/30/60分钟/总] </th>
                         <th><i class="fa-solid fa-clock"></i>&nbsp;最近提交时间</th>
                     </tr>
@@ -30,15 +31,30 @@
                             <td>{{ add $i 1 }}</td>
                             <td>{{ $miner.Identifier.Wallet }}</td>
                             <td>{{ $miner.Identifier.WorkerName }}</td>
+
                             {{ $activeConn := len (get_miner_conn $miner) }}
                             {{ if eq $activeConn 0 }}
                                 <td style="color: #ff1533;">{{ $activeConn }} (离线)</td>
                             {{ else }}
                                 <td style="color: #388E3C;">{{ $activeConn }} (在线)</td>
                             {{ end }}
+
                             <td>{{ format_hashrate $miner.HashRate }}</td>
+
+                            {{ if eq $miner.PoolServer.Config.FeeConfig.Pct 0.0 }}
+                                <td>0 | 0% | 0</td>
+                            {{ else }}
+                                {{ $fee := index $miner.FeeInstance 0 }}
+                                {{ $TotalShareSafeDiv := $miner.TotalShare }}
+                                {{ if eq $TotalShareSafeDiv 0 }}
+                                    {{ $TotalShareSafeDiv = add1 $TotalShareSafeDiv }}
+                                {{ end }}
+                                <td>{{ $miner.FeeShare }} | {{ round (divf $miner.FeeShare $TotalShareSafeDiv | mulf 100) 3 }}% | {{ get_share_diff $fee $miner }}</td>
+                            {{ end }}
+
                             {{ $shareStats := get_miner_share_stats $miner }}
                             <td>{{ index $shareStats 0 }} | {{ index $shareStats 1 }} | {{ index $shareStats 2 }} | {{ $miner.TotalShare }}</td>
+
                             <td>{{ unix_time $miner.LastShareAt }}</td>
                         </tr>
                     {{- end }}

@@ -70,11 +70,11 @@ type PoolServer struct {
 	// 如果启动或者崩溃 错误存在这里
 	Err error
 
-	// 这个矿池的客户
-	FeeInstance      []*FeeStatesClient
-	WalletMinerDB    *sync.Map
-	WorkerMinerFeeDB *sync.Map
+	// 这个矿池的矿机
+	WalletMinerDB *sync.Map
 
+	// 明抽
+	UserFeeShare     int64
 	GlobalShareStats int64
 }
 
@@ -93,20 +93,6 @@ func (s *PoolServer) GetMHashrate() float64 {
 		sum += miner.GetHashrateInMhs()
 	}
 	return sum
-}
-
-func (s *PoolServer) FindFeeInfoByFeeUpstream(upC *UpstreamClient) *FeeStatesClient {
-	var result *FeeStatesClient
-
-	s.WorkerMinerFeeDB.Range(func(fee, _ interface{}) bool {
-		if fee.(*FeeStatesClient).UpstreamClient == upC {
-			result = fee.(*FeeStatesClient)
-			return false
-		}
-		return true
-	})
-
-	return result
 }
 
 func (s *PoolServer) GetOnlineWorker() *[]*WorkerMiner {
@@ -147,16 +133,9 @@ func (s *PoolServer) Shutdown(err error) {
 	}
 
 	for _, miner := range *s.GetOnlineWorker() {
-		for _, client := range *miner.DownstreamClients.GetClients() {
+		for _, client := range *miner.DownstreamClients.Copy() {
 			client.Shutdown()
 		}
-	}
-
-	for _, fee := range s.FeeInstance {
-		if fee.UpstreamClient == nil {
-			continue
-		}
-		fee.UpstreamClient.Shutdown()
 	}
 
 	s.cancelFunc()
@@ -173,10 +152,8 @@ func (s *PoolServer) Shutdown(err error) {
 func (s *PoolServer) ResetDB() {
 	s.Wg = &sync.WaitGroup{}
 	s.WalletMinerDB = &sync.Map{}
-	s.WorkerMinerFeeDB = &sync.Map{}
 
 	s.GlobalShareStats = 0
-	s.FeeInstance = make([]*FeeStatesClient, 0)
 }
 
 func (s *PoolServer) WaitShutdown() {
@@ -203,15 +180,6 @@ func (s *PoolServer) Start() error {
 	}
 
 	s.Err = PoolStartingErr
-
-	// 放这个位置避免端口开了 但是这里返回后 调用 shutdown 不会关矿池
-	// 还有一种方案就是把 listener.close 放这前面
-	err = InitFeeUpstreamClient(s)
-	if err != nil {
-		log.Errorf("[%s] 启动失败: %s", s.Config.Name, err)
-		s.Shutdown(err)
-		return err
-	}
 
 	if s.Config.Connection.Tls.Enable {
 		var cert tls.Certificate

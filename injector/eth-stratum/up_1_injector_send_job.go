@@ -19,42 +19,23 @@ func UpInjectorSendJob(payload *connection.InjectorUpstreamPayload) {
 
 	// 如果是从抽水矿池发来的
 	if payload.UpstreamClient.DownstreamClient == nil {
-		// 获取抽水信息
-		feeInfo := payload.UpstreamClient.PoolServer.FindFeeInfoByFeeUpstream(payload.UpstreamClient)
-		if feeInfo == nil {
-			return
-		}
+		m := payload.UpstreamClient.WorkerMiner
 
-		// 获取下游
-		downstream, ok := payload.UpstreamClient.PoolServer.WorkerMinerFeeDB.Load(feeInfo)
-		if !ok {
+		if !m.DropUpstream {
 			return
 		}
 
 		// 群发给要抽水的
-		downstream.(*connection.WorkerMinerSliceWrapper).CopyRange(func(i int, m *connection.WorkerMiner) bool {
-			for _, c := range *m.DownstreamClients.Copy() {
-				if logrus.GetLevel() == logrus.TraceLevel {
-					feeShare, _ := m.FeeShareIndividual.Load(feeInfo)
-					logrus.WithFields(logrus.Fields{
-						"FeePct":             feeInfo.Pct,
-						"FeeWallet":          feeInfo.Wallet,
-						"Share":              m.TotalShare,
-						"FeeShareIndividual": feeShare,
-					}).Tracef("[%s][%s] 发送抽水份额", m.PoolServer.Config.Name, m.GetID())
-				}
-
-				err = c.Write(payload.In)
-				if err != nil {
-					logrus.Errorf("[UpInjectorSendJob-FeeFw][%s][%s][%s] 上游转发到下游失败: %s", m.PoolServer.Config.Name, m.GetID(), c.Connection.Conn.RemoteAddr().String(), err)
-					c.Shutdown()
-					continue
-				}
-
+		for _, c := range *payload.UpstreamClient.WorkerMiner.DownstreamClients.Copy() {
+			err = c.Write(payload.In)
+			if err != nil {
+				logrus.Errorf("[UpInjectorSendJob-FeeFw][%s][%s][%s] 上游转发到下游失败: %s", m.PoolServer.Config.Name, m.GetID(), c.Connection.Conn.RemoteAddr().String(), err)
+				c.Shutdown()
 				continue
 			}
-			return true
-		})
+
+			continue
+		}
 
 		return
 	}

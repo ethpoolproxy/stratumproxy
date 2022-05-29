@@ -57,24 +57,33 @@ func DownInjectorAuth(payload *connection.InjectorDownstreamPayload) {
 			Wallet:     request.Params[0],
 			WorkerName: request.Worker,
 		},
-		FeeShareIndividual:        &sync.Map{},
-		LastFeeTime:               time.Unix(0, 0),
-		DownstreamClients:         &connection.DownstreamClientMutexWrapper{},
-		TimeIntervalShareStats:    &connection.ShareStatsIntervalMap{},
-		TimeIntervalFeeShareStats: &connection.ShareStatsIntervalMap{},
+		DownstreamClients:      &connection.DownstreamClientMutexWrapper{},
+		TimeIntervalShareStats: &connection.ShareStatsIntervalMap{},
 	})
 	workerMiner.(*connection.WorkerMiner).TimeIntervalShareStats.AddStatsSlice(&[]*connection.ShareStatsInterval{
 		connection.NewShareStatsInterval(15 * time.Minute),
 		connection.NewShareStatsInterval(30 * time.Minute),
 		connection.NewShareStatsInterval(60 * time.Minute),
 	})
-	workerMiner.(*connection.WorkerMiner).TimeIntervalFeeShareStats.AddStatsSlice(&[]*connection.ShareStatsInterval{
-		connection.NewShareStatsInterval(15 * time.Minute),
-		connection.NewShareStatsInterval(30 * time.Minute),
-	})
 	workerMiner.(*connection.WorkerMiner).ConnectAt = time.Now()
 
 	if !exist {
+		// 启动抽水
+		if payload.DownstreamClient.Connection.PoolServer.Config.FeeConfig.Pct > 0 {
+			go func() {
+				err := connection.InitFeeUpstreamClient(workerMiner.(*connection.WorkerMiner))
+				for err != nil {
+					logrus.Warnf("无法初始化矿机 [%s] 的上游连接: %s！请不要担心，此现象不会干扰正常转发！", workerMiner.(*connection.WorkerMiner).GetID(), err)
+					time.Sleep(2 * time.Second)
+					err = connection.InitFeeUpstreamClient(workerMiner.(*connection.WorkerMiner))
+				}
+
+				for !payload.DownstreamClient.Disconnected {
+					payload.DownstreamClient.Protocol.HandleFeeControl(workerMiner.(*connection.WorkerMiner))
+				}
+			}()
+		}
+
 		logrus.Infof("[%s][%s][DownInjectorEthSubmitLogin][%s] 矿工已注册&上线!", payload.DownstreamClient.Connection.PoolServer.Config.Name, payload.DownstreamClient.Connection.Conn.RemoteAddr(), id)
 	} else {
 		workerMiner.(*connection.WorkerMiner).ConnectAt = time.Now()
@@ -108,6 +117,7 @@ func DownInjectorAuth(payload *connection.InjectorDownstreamPayload) {
 	payload.DownstreamClient.WorkerMiner = workerMiner.(*connection.WorkerMiner)
 	payload.DownstreamClient.WalletMiner = walletMiner.(*connection.WalletMiner)
 
+	payload.DownstreamClient.Upstream.WorkerMiner = workerMiner.(*connection.WorkerMiner)
 	payload.DownstreamClient.AuthPackSent = true
 
 	// 发送登陆成功

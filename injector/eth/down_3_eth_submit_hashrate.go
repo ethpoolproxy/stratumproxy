@@ -43,5 +43,9 @@ func DownInjectorEthSubmitHashrate(payload *connection.InjectorDownstreamPayload
 
 	logrus.Tracef("[%s][InjectorEthSubmitHashrate] 记录算力: %d MH/s", payload.DownstreamClient.WorkerMiner.GetID(), hashratePack.Hashrate/1000000)
 
-	go payload.DownstreamClient.Upstream.SafeWrite(payload.In)
+	err = payload.DownstreamClient.Upstream.Write(payload.In)
+	if err != nil {
+		logrus.Tracef("[%s][%s][InjectorEthSubmitHashrate] 无法转发到上游: %s", payload.DownstreamClient.Connection.PoolServer.Config.Name, payload.DownstreamClient.WorkerMiner.GetID(), err)
+		return
+	}
 }

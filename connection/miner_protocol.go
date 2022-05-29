@@ -18,7 +18,7 @@ func GetProtocol(name string) *Protocol {
 
 type ProtocolHandler interface {
 	HandleDownstreamDisconnect(client *DownstreamClient)
-	HandleFeeControl(pool *PoolServer)
+	HandleFeeControl(worker *WorkerMiner)
 	InitialUpstreamConn(upstream *UpstreamClient) error
 	InitialUpstreamAuth(upstream *UpstreamClient, identifier MinerIdentifier) error
 }

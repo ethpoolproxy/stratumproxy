@@ -11,6 +11,7 @@ import (
 
 type DownstreamClient struct {
 	Connection *PoolConn
+	Protocol   *Protocol
 
 	AuthPackSent bool
 
@@ -85,7 +86,7 @@ func (client *DownstreamClient) Shutdown() {
 			client.WorkerMiner.DownstreamClients.Remove(client)
 
 			// 如果当前连接不止一个连接
-			if len(*client.WorkerMiner.DownstreamClients.GetClients()) > 0 {
+			if len(*client.WorkerMiner.DownstreamClients.Copy()) > 0 {
 				return
 			}
 
@@ -93,11 +94,8 @@ func (client *DownstreamClient) Shutdown() {
 
 			// 去掉抽水
 			client.WorkerMiner.DropUpstream = false
-			for _, feeInstance := range client.WorkerMiner.PoolServer.FeeInstance {
-				feeWorkerMinersObj, ok := client.WorkerMiner.PoolServer.WorkerMinerFeeDB.Load(feeInstance)
-				if ok {
-					feeWorkerMinersObj.(*WorkerMinerSliceWrapper).Remove(client.WorkerMiner)
-				}
+			for _, feeInstance := range client.WorkerMiner.FeeInstance {
+				feeInstance.UpstreamClient.Shutdown()
 			}
 		}
 
@@ -118,6 +116,8 @@ func NewDownstreamClient(c *PoolConn) *DownstreamClient {
 		Connection:   c,
 		AuthPackSent: false,
 		shutdownOnce: &sync.Once{},
+		// TODO: 暂时直接设置成 PoolServer 的 | 之后自动识别
+		Protocol: c.PoolServer.Protocol,
 	}
 
 	go instance.processRead()

